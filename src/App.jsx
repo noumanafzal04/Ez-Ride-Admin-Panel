@@ -1,0 +1,39 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import DashboardLayout from './layouts/DashboardLayout'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Placeholder from './pages/Placeholder'
+import Roles from './pages/Roles'
+import Staff from './pages/Staff'
+import Users from './pages/Users'
+import Categories from './pages/Categories'
+import Providers from './pages/Providers'
+import Listings from './pages/Listings'
+import Inspections from './pages/Inspections'
+import Reports from './pages/Reports'
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/inspections" element={<Inspections />} />
+          <Route path="/providers" element={<Providers />} />
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/staff" element={<Staff />} />
+          <Route path="/roles" element={<Roles />} />
+          <Route path="/settings" element={<Placeholder title="Settings" />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
