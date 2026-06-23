@@ -1,10 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import adminService from '../services/adminService'
 
-export const useInspections = (status) =>
+export const useInspections = ({ page = 1, perPage = 10, status } = {}) =>
   useQuery({
-    queryKey: ['admin-inspections', status || 'all'],
-    queryFn: () => adminService.inspections({ status: status || undefined }).then((r) => r.data?.data?.requests || []),
+    queryKey: ['admin-inspections', page, perPage, status || 'all'],
+    queryFn: () =>
+      adminService.inspections({ page, per_page: perPage, status: status || undefined }).then((r) => {
+        const d = r.data?.data || {}
+        return { rows: d.requests || [], total: d.meta?.total || 0 }
+      }),
+    placeholderData: keepPreviousData,
   })
 
 export const useInspection = (id) =>

@@ -1,76 +1,118 @@
-import { useState } from 'react'
-import { Table } from 'antd'
-import { Plus, Pencil, Trash2, Loader2, Tags } from 'lucide-react'
-import Modal from '../components/Modal'
+import { useState, useEffect } from 'react'
+import { Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm, Tag, App } from 'antd'
+import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
 import { useServiceCategories, useSaveCategory, useDeleteCategory } from '../hooks/useCategories'
 
-function CategoryModal({ category, onClose }) {
+function CategoryModal({ category, open, onClose }) {
   const isEdit = !!category?.id
-  const [name, setName] = useState(category?.name || '')
-  const [icon, setIcon] = useState(category?.icon || '')
-  const [sort, setSort] = useState(category?.sort ?? '')
-  const [isActive, setIsActive] = useState(category?.is_active ?? true)
-  const [error, setError] = useState('')
+  const [form] = Form.useForm()
+  const { message } = App.useApp()
 
-  const save = useSaveCategory({ onSuccess: onClose, onError: (e) => setError(e.response?.data?.message || 'Could not save.') })
-  const submit = () => {
-    setError('')
-    if (!name.trim()) { setError('Name is required.'); return }
-    const payload = { name: name.trim(), icon: icon.trim() || null, is_active: isActive }
-    if (sort !== '') payload.sort = Number(sort)
+  const save = useSaveCategory({
+    onSuccess: () => { message.success(isEdit ? 'Category updated' : 'Category created'); onClose() },
+    onError: (e) => message.error(e.response?.data?.message || 'Could not save.'),
+  })
+
+  useEffect(() => {
+    if (open) {
+      form.setFieldsValue({
+        name: category?.name || '',
+        icon: category?.icon || '',
+        sort: category?.sort ?? null,
+        is_active: category?.is_active ?? true,
+      })
+    }
+  }, [open, category, form])
+
+  const submit = async () => {
+    const v = await form.validateFields()
+    const payload = { name: v.name.trim(), icon: v.icon?.trim() || null, is_active: v.is_active }
+    if (v.sort !== null && v.sort !== undefined && v.sort !== '') payload.sort = Number(v.sort)
     save.mutate({ id: category?.id, payload })
   }
-  const input = 'w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-brand-100'
 
   return (
-    <Modal open onClose={onClose} title={isEdit ? `Edit ${category.name}` : 'New category'}
-      footer={
-        <>
-          <button onClick={onClose} className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-          <button onClick={submit} disabled={save.isPending} className="flex items-center gap-2 rounded-xl bg-brand-400 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-brand-500 disabled:opacity-60">
-            {save.isPending && <Loader2 size={16} className="animate-spin" />} Save
-          </button>
-        </>
-      }>
-      {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">{error}</div>}
-      <div className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className={input} placeholder="e.g. Car Wash & Detailing" />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Icon <span className="text-gray-400">(mobile icon name)</span></label>
-          <input value={icon} onChange={(e) => setIcon(e.target.value)} className={input} placeholder="e.g. car-wash" />
-          <p className="mt-1 text-xs text-gray-400">MaterialCommunityIcons name used by the app.</p>
-        </div>
+    <Modal
+      open={open}
+      title={isEdit ? `Edit ${category.name}` : 'New category'}
+      onCancel={onClose}
+      onOk={submit}
+      okText="Save"
+      confirmLoading={save.isPending}
+      okButtonProps={{ style: { background: '#FFD400', color: '#07163b', fontWeight: 600 } }}
+    >
+      <Form form={form} layout="vertical" requiredMark className="pt-2">
+        <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }, { max: 100 }]}>
+          <Input placeholder="e.g. Car Wash & Detailing" />
+        </Form.Item>
+        <Form.Item name="icon" label="Icon" extra="MaterialCommunityIcons name used by the app (e.g. car-wash).">
+          <Input placeholder="e.g. car-wash" />
+        </Form.Item>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Sort</label>
-            <input type="number" value={sort} onChange={(e) => setSort(e.target.value)} className={input} placeholder="auto" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Status</label>
-            <select value={isActive ? '1' : '0'} onChange={(e) => setIsActive(e.target.value === '1')} className={input}>
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
-            </select>
-          </div>
+          <Form.Item name="sort" label="Sort order">
+            <InputNumber className="w-full" min={0} placeholder="auto" />
+          </Form.Item>
+          <Form.Item name="is_active" label="Active" valuePropName="checked">
+            <Switch />
+          </Form.Item>
         </div>
-      </div>
+      </Form>
     </Modal>
   )
 }
 
 export default function Categories() {
   const { can } = usePermissions()
+  const { message } = App.useApp()
   const { data: categories = [], isLoading } = useServiceCategories()
-  const [editing, setEditing] = useState(undefined)
-  const save = useSaveCategory()
-  const del = useDeleteCategory({ onError: (e) => alert(e.response?.data?.message || 'Could not delete.') })
+  const [editing, setEditing] = useState(undefined) // undefined=closed, null=new, obj=edit
 
-  const toggle = (c) => can('categories.update') && save.mutate({ id: c.id, payload: { is_active: !c.is_active } })
-  const remove = (c) => { if (window.confirm(`Delete "${c.name}"?`)) del.mutate(c.id) }
+  const save = useSaveCategory({
+    onSuccess: () => message.success('Status updated'),
+    onError: (e) => message.error(e.response?.data?.message || 'Could not update.'),
+  })
+  const del = useDeleteCategory({
+    onSuccess: () => message.success('Category deleted'),
+    onError: (e) => message.error(e.response?.data?.message || 'Could not delete.'),
+  })
+
+  const canUpdate = can('categories.update')
+  const toggle = (c) => canUpdate && save.mutate({ id: c.id, payload: { is_active: !c.is_active } })
+
+  const columns = [
+    {
+      title: 'Category', dataIndex: 'name',
+      render: (_, c) => (
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-ink"><Tags size={16} /></span>
+          <div>
+            <p className="font-medium text-gray-800">{c.name}</p>
+            <p className="text-xs text-gray-400">{c.slug}</p>
+          </div>
+        </div>
+      ),
+    },
+    { title: 'Icon', dataIndex: 'icon', width: 160, render: (icon) => <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">{icon || '—'}</code> },
+    { title: 'Providers', dataIndex: 'providers_count', width: 110, render: (n) => n ?? 0 },
+    {
+      title: 'Status', width: 120,
+      render: (_, c) => <Switch size="small" checked={!!c.is_active} disabled={!canUpdate} loading={save.isPending && save.variables?.id === c.id} onChange={() => toggle(c)} />,
+    },
+    {
+      title: 'Actions', align: 'right', width: 110,
+      render: (_, c) => (
+        <div className="flex justify-end gap-1">
+          {canUpdate && <Button type="text" icon={<Pencil size={16} />} onClick={() => setEditing(c)} />}
+          {can('categories.delete') && (
+            <Popconfirm title={`Delete "${c.name}"?`} okText="Delete" okButtonProps={{ danger: true }} onConfirm={() => del.mutate(c.id)}>
+              <Button type="text" danger icon={<Trash2 size={16} />} loading={del.isPending && del.variables === c.id} />
+            </Popconfirm>
+          )}
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="w-full">
@@ -80,9 +122,10 @@ export default function Categories() {
           <p className="mt-1 text-sm text-gray-500">Categories providers can offer (mechanic, car wash, AC…).</p>
         </div>
         {can('categories.create') && (
-          <button onClick={() => setEditing(null)} className="flex items-center gap-2 rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-semibold text-ink hover:bg-brand-500">
-            <Plus size={18} /> New Category
-          </button>
+          <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)}
+            style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>
+            New Category
+          </Button>
         )}
       </div>
 
@@ -91,46 +134,13 @@ export default function Categories() {
           rowKey="id"
           loading={isLoading}
           dataSource={categories}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} categories` }}
+          columns={columns}
           scroll={{ x: 'max-content' }}
-          columns={[
-            {
-              title: 'Category', dataIndex: 'name',
-              render: (_, c) => (
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-ink"><Tags size={16} /></span>
-                  <div>
-                    <p className="font-medium text-gray-800">{c.name}</p>
-                    <p className="text-xs text-gray-400">{c.slug}</p>
-                  </div>
-                </div>
-              ),
-            },
-            { title: 'Icon', dataIndex: 'icon', width: 160, render: (icon) => <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">{icon || '—'}</code> },
-            { title: 'Providers', dataIndex: 'providers_count', width: 110, render: (n) => n ?? 0 },
-            {
-              title: 'Status', width: 120,
-              render: (_, c) => (
-                <button onClick={() => toggle(c)} disabled={!can('categories.update')}
-                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${c.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'} ${can('categories.update') ? 'cursor-pointer' : ''}`}>
-                  {c.is_active ? 'Active' : 'Inactive'}
-                </button>
-              ),
-            },
-            {
-              title: 'Actions', align: 'right', width: 110,
-              render: (_, c) => (
-                <div className="flex justify-end gap-2">
-                  {can('categories.update') && <button onClick={() => setEditing(c)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"><Pencil size={17} /></button>}
-                  {can('categories.delete') && <button onClick={() => remove(c)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={17} /></button>}
-                </div>
-              ),
-            },
-          ]}
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} categories` }}
         />
       </div>
 
-      {editing !== undefined && <CategoryModal category={editing} onClose={() => setEditing(undefined)} />}
+      <CategoryModal category={editing} open={editing !== undefined} onClose={() => setEditing(undefined)} />
     </div>
   )
 }

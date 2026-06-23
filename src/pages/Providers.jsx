@@ -1,25 +1,31 @@
-import { useState } from 'react'
-import { Table } from 'antd'
-import { BadgeCheck, XCircle, PauseCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Table, Tag, Segmented, Button, Popconfirm, App } from 'antd'
+import { BadgeCheck, XCircle, PauseCircle } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import { FilterBar, FilterGroup } from '../components/FilterBar'
 import { useProviders, useSetProviderStatus } from '../hooks/useProviders'
 
-const FILTERS = [
-  { key: '', label: 'All' }, { key: 'pending', label: 'Pending' }, { key: 'approved', label: 'Approved' },
-  { key: 'rejected', label: 'Rejected' }, { key: 'suspended', label: 'Suspended' },
-]
-const STATUS_STYLE = {
-  approved: 'bg-emerald-50 text-emerald-600', pending: 'bg-amber-50 text-amber-600',
-  rejected: 'bg-red-50 text-red-600', suspended: 'bg-gray-100 text-gray-500',
-}
+const STATUS_COLOR = { approved: 'success', pending: 'warning', rejected: 'error', suspended: 'default' }
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
 export default function Providers() {
   const { can } = usePermissions()
+  const { message } = App.useApp()
   const [status, setStatus] = useState('')
-  const { data: providers = [], isLoading } = useProviders(status)
-  const setStatusMut = useSetProviderStatus({ onError: (e) => alert(e.response?.data?.message || 'Failed.') })
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => { setPage(1) }, [status])
+
+  const { data, isFetching } = useProviders({ page, perPage: pageSize, status })
+  const rows = data?.rows || []
+  const total = data?.total || 0
+
   const canManage = can('providers.update')
+  const setStatusMut = useSetProviderStatus({
+    onSuccess: (_r, v) => message.success(`Provider ${v.status}`),
+    onError: (e) => message.error(e.response?.data?.message || 'Action failed.'),
+  })
 
   const columns = [
     {
@@ -38,39 +44,36 @@ export default function Providers() {
       title: 'Categories',
       render: (_, p) => (
         <div className="flex flex-wrap gap-1.5">
-          {(p.categories || []).slice(0, 3).map((c) => <span key={c.id} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{c.name}</span>)}
+          {(p.categories || []).slice(0, 3).map((c) => <Tag key={c.id} className="m-0!">{c.name}</Tag>)}
         </div>
       ),
     },
     { title: 'City', width: 120, render: (_, p) => <span className="text-gray-600">{p.city?.name || '—'}</span> },
     {
       title: 'Status', dataIndex: 'status', width: 120,
-      render: (s) => <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[s] || 'bg-gray-100 text-gray-500'}`}>{s}</span>,
+      render: (s) => <Tag color={STATUS_COLOR[s] || 'default'} className="capitalize">{s}</Tag>,
     },
     {
-      title: 'Actions', align: 'right', width: 260,
+      title: 'Actions', align: 'right', width: 280,
       render: (_, p) => {
         if (!canManage) return null
         const busy = setStatusMut.isPending && setStatusMut.variables?.id === p.id
         return (
           <div className="flex justify-end gap-2">
             {p.status !== 'approved' && (
-              <button disabled={busy} onClick={() => setStatusMut.mutate({ id: p.id, status: 'approved' })}
-                className="flex items-center gap-1.5 rounded-lg border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-600 hover:bg-emerald-50 disabled:opacity-50">
-                {busy ? <Loader2 size={15} className="animate-spin" /> : <BadgeCheck size={15} />} Approve
-              </button>
+              <Popconfirm title="Approve this provider?" okText="Approve" onConfirm={() => setStatusMut.mutate({ id: p.id, status: 'approved' })}>
+                <Button size="small" icon={<BadgeCheck size={14} />} loading={busy} className="text-emerald-600! border-emerald-200!">Approve</Button>
+              </Popconfirm>
             )}
             {p.status === 'approved' && (
-              <button disabled={busy} onClick={() => setStatusMut.mutate({ id: p.id, status: 'suspended' })}
-                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-                <PauseCircle size={15} /> Suspend
-              </button>
+              <Popconfirm title="Suspend this provider?" okText="Suspend" onConfirm={() => setStatusMut.mutate({ id: p.id, status: 'suspended' })}>
+                <Button size="small" icon={<PauseCircle size={14} />} loading={busy}>Suspend</Button>
+              </Popconfirm>
             )}
             {p.status !== 'rejected' && (
-              <button disabled={busy} onClick={() => setStatusMut.mutate({ id: p.id, status: 'rejected' })}
-                className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50">
-                <XCircle size={15} /> Reject
-              </button>
+              <Popconfirm title="Reject this provider?" okText="Reject" okButtonProps={{ danger: true }} onConfirm={() => setStatusMut.mutate({ id: p.id, status: 'rejected' })}>
+                <Button size="small" danger icon={<XCircle size={14} />} loading={busy}>Reject</Button>
+              </Popconfirm>
             )}
           </div>
         )
@@ -85,20 +88,27 @@ export default function Providers() {
         <p className="mt-1 text-sm text-gray-500">Review and verify car-service providers.</p>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => (
-          <button key={f.key} onClick={() => setStatus(f.key)} className={`rounded-full px-3 py-1.5 text-sm font-medium ${status === f.key ? 'bg-ink text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{f.label}</button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup label="Status">
+          <Segmented size="large" value={status} onChange={setStatus} options={[
+            { label: 'All', value: '' }, { label: 'Pending', value: 'pending' }, { label: 'Approved', value: 'approved' },
+            { label: 'Rejected', value: 'rejected' }, { label: 'Suspended', value: 'suspended' },
+          ]} />
+        </FilterGroup>
+      </FilterBar>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-2">
         <Table
           rowKey="id"
-          loading={isLoading}
+          loading={isFetching}
           columns={columns}
-          dataSource={providers}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} providers` }}
+          dataSource={rows}
           scroll={{ x: 'max-content' }}
+          pagination={{
+            current: page, pageSize, total, showSizeChanger: true,
+            showTotal: (t) => `${t} providers`,
+            onChange: (p, ps) => { setPage(p); setPageSize(ps) },
+          }}
         />
       </div>
     </div>

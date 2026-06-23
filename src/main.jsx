@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, App as AntApp } from 'antd'
 import './index.css'
 import App from './App.jsx'
 
@@ -18,6 +18,15 @@ const antdTheme = {
   },
   components: {
     Table: { headerBg: '#f9fafb', headerColor: '#6b7280', rowHoverBg: '#f9fafb' },
+    // Selected filter option = dark navy pill with white text.
+    Segmented: {
+      itemSelectedBg: '#07163b',
+      itemSelectedColor: '#ffffff',
+      itemColor: '#5d6470',
+      itemHoverColor: '#07163b',
+      trackBg: '#f1f2f4',
+      borderRadius: 10,
+    },
   },
 }
 
@@ -25,9 +34,11 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ConfigProvider theme={antdTheme}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <AntApp>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
   </StrictMode>,

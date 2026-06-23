@@ -1,13 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import adminService from '../services/adminService'
 
-export const useListings = (status, type) =>
+export const useListings = ({ page = 1, perPage = 10, status, type } = {}) =>
   useQuery({
-    queryKey: ['admin-listings', status || 'all', type || 'all'],
+    queryKey: ['admin-listings', page, perPage, status || 'all', type || 'all'],
     queryFn: () =>
       adminService
-        .listings({ status: status || undefined, type: type || undefined })
-        .then((r) => r.data?.data?.listings || []),
+        .listings({ page, per_page: perPage, status: status || undefined, type: type || undefined })
+        .then((r) => {
+          const d = r.data?.data || {}
+          return { rows: d.listings || [], total: d.meta?.total || 0 }
+        }),
+    placeholderData: keepPreviousData,
   })
 
 const mutation = (fn) => {

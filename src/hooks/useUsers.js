@@ -1,10 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import adminService from '../services/adminService'
 
-export const useAppUsers = (filters = {}) =>
+// Server-side paginated. Returns { rows, total }.
+export const useAppUsers = ({ page = 1, perPage = 10, ...filters } = {}) =>
   useQuery({
-    queryKey: ['app-users', filters],
-    queryFn: () => adminService.appUsers(filters).then((r) => r.data?.data || []),
+    queryKey: ['app-users', page, perPage, filters],
+    queryFn: () =>
+      adminService.appUsers({ page, per_page: perPage, ...filters }).then((r) => {
+        const d = r.data?.data || {}
+        return { rows: d.users || [], total: d.meta?.total || 0 }
+      }),
+    placeholderData: keepPreviousData,
   })
 
 export const useSetVerification = (options = {}) => {

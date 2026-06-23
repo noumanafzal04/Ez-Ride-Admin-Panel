@@ -1,27 +1,27 @@
 import { useState, useEffect } from 'react'
-import { Table } from 'antd'
-import { Loader2, ClipboardCheck } from 'lucide-react'
-import Modal from '../components/Modal'
+import { Table, Tag, Segmented, Button, Modal, Select, Input, Spin, App } from 'antd'
+import { ClipboardCheck } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import { FilterBar, FilterGroup } from '../components/FilterBar'
 import {
   useInspections, useInspection, useInspectionCategories,
   useUpdateInspectionStatus, useSaveInspectionReport,
 } from '../hooks/useInspections'
 
 const STATUSES = ['pending', 'reviewing', 'scheduled', 'in_progress', 'completed', 'cancelled']
-const STATUS_STYLE = {
-  pending: 'bg-blue-50 text-blue-600', reviewing: 'bg-amber-50 text-amber-600',
-  scheduled: 'bg-violet-50 text-violet-600', in_progress: 'bg-teal-50 text-teal-600',
-  completed: 'bg-emerald-50 text-emerald-600', cancelled: 'bg-red-50 text-red-600',
+const STATUS_COLOR = {
+  pending: 'blue', reviewing: 'gold', scheduled: 'purple',
+  in_progress: 'cyan', completed: 'success', cancelled: 'error',
 }
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'na']
 const carLine = (r) => [r.car_year, r.car_make, r.car_model].filter(Boolean).join(' ') || 'Car inspection'
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
-const Badge = ({ s }) => <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[s] || 'bg-gray-100 text-gray-500'}`}>{(s || '').replace('_', ' ')}</span>
+const Badge = ({ s }) => <Tag color={STATUS_COLOR[s] || 'default'} className="capitalize">{(s || '').replace('_', ' ')}</Tag>
 
-function InspectionModal({ id, onClose }) {
+function InspectionModal({ id, open, onClose }) {
   const { can } = usePermissions()
-  const { data: item } = useInspection(id)
+  const { message } = App.useApp()
+  const { data: item, isLoading } = useInspection(id)
   const { data: categories = [] } = useInspectionCategories()
   const canEdit = can('inspections.update')
 
@@ -30,7 +30,6 @@ function InspectionModal({ id, onClose }) {
   const [conditions, setConditions] = useState({})
   const [comments, setComments] = useState('')
   const [seeded, setSeeded] = useState(false)
-  const [msg, setMsg] = useState('')
 
   useEffect(() => {
     if (item && !seeded) {
@@ -41,10 +40,17 @@ function InspectionModal({ id, onClose }) {
       setComments(item.inspector_comments || '')
       setSeeded(true)
     }
-  }, [item, seeded])
+    if (!open) setSeeded(false)
+  }, [item, seeded, open])
 
-  const updateStatus = useUpdateInspectionStatus({ onSuccess: () => setMsg('Status updated.'), onError: (e) => setMsg(e.response?.data?.message || 'Failed.') })
-  const saveReport = useSaveInspectionReport({ onSuccess: () => { setMsg('Report saved — request completed.'); }, onError: (e) => setMsg(e.response?.data?.message || 'Failed.') })
+  const updateStatus = useUpdateInspectionStatus({
+    onSuccess: () => message.success('Status updated'),
+    onError: (e) => message.error(e.response?.data?.message || 'Failed.'),
+  })
+  const saveReport = useSaveInspectionReport({
+    onSuccess: () => { message.success('Report saved — request completed'); onClose() },
+    onError: (e) => message.error(e.response?.data?.message || 'Failed.'),
+  })
 
   const submitStatus = () => {
     const payload = { status }
@@ -52,10 +58,8 @@ function InspectionModal({ id, onClose }) {
     updateStatus.mutate({ id, payload })
   }
   const submitReport = () => {
-    const items = categories
-      .filter((c) => conditions[c.id])
-      .map((c) => ({ category_id: c.id, condition: conditions[c.id] }))
-    if (!items.length) { setMsg('Rate at least one category.'); return }
+    const items = categories.filter((c) => conditions[c.id]).map((c) => ({ category_id: c.id, condition: conditions[c.id] }))
+    if (!items.length) { message.warning('Rate at least one category.'); return }
     saveReport.mutate({ id, payload: { items, comments: comments.trim() || null } })
   }
 
@@ -67,14 +71,13 @@ function InspectionModal({ id, onClose }) {
   )
 
   return (
-    <Modal open onClose={onClose} size="lg" title={item ? carLine(item) : 'Inspection'}>
-      {!item ? (
-        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-gray-400" /></div>
+    <Modal open={open} onCancel={onClose} footer={null} width={720}
+      title={item ? carLine(item) : 'Inspection'}
+      styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}>
+      {isLoading || !item ? (
+        <div className="flex justify-center py-10"><Spin /></div>
       ) : (
-        <div className="space-y-5">
-          {msg && <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700">{msg}</div>}
-
-          {/* Request info */}
+        <div className="space-y-5 pt-1">
           <div className="rounded-xl border border-gray-200 p-4">
             <Info label="Requester" value={`${item.name} · ${item.phone}`} />
             {item.email && <Info label="Email" value={item.email} />}
@@ -85,25 +88,21 @@ function InspectionModal({ id, onClose }) {
             {item.overall_grade && <Info label="Result" value={`Grade ${item.overall_grade} · ${item.overall_score ?? ''}%`} />}
           </div>
 
-          {/* Status */}
           {canEdit && (
             <div className="rounded-xl border border-gray-200 p-4">
               <p className="mb-2 text-sm font-semibold text-gray-700">Update status</p>
               <div className="flex flex-wrap items-center gap-2">
-                <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm capitalize outline-none focus:border-ink">
-                  {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                </select>
+                <Select value={status} onChange={setStatus} style={{ minWidth: 160 }}
+                  options={STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))} />
                 {status === 'scheduled' && (
-                  <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-ink" />
+                  <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-ink" />
                 )}
-                <button onClick={submitStatus} disabled={updateStatus.isPending} className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">
-                  {updateStatus.isPending ? 'Saving…' : 'Update'}
-                </button>
+                <Button type="primary" onClick={submitStatus} loading={updateStatus.isPending}>Update</Button>
               </div>
             </div>
           )}
 
-          {/* Report */}
           {canEdit && (
             <div className="rounded-xl border border-gray-200 p-4">
               <p className="mb-3 text-sm font-semibold text-gray-700">Inspection report</p>
@@ -125,11 +124,12 @@ function InspectionModal({ id, onClose }) {
                   </div>
                 ))}
               </div>
-              <textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Overall comments (shown to requester)" rows={2}
-                className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-ink" />
-              <button onClick={submitReport} disabled={saveReport.isPending} className="mt-3 flex items-center gap-2 rounded-lg bg-brand-400 px-4 py-2.5 text-sm font-semibold text-ink hover:bg-brand-500 disabled:opacity-60">
-                {saveReport.isPending && <Loader2 size={16} className="animate-spin" />} Save Report &amp; Complete
-              </button>
+              <Input.TextArea value={comments} onChange={(e) => setComments(e.target.value)} rows={2}
+                placeholder="Overall comments (shown to requester)" className="mt-3" />
+              <Button type="primary" onClick={submitReport} loading={saveReport.isPending}
+                className="mt-3" style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>
+                Save Report &amp; Complete
+              </Button>
             </div>
           )}
         </div>
@@ -140,8 +140,34 @@ function InspectionModal({ id, onClose }) {
 
 export default function Inspections() {
   const [status, setStatus] = useState('')
-  const { data: items = [], isLoading } = useInspections(status)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [openId, setOpenId] = useState(null)
+
+  useEffect(() => { setPage(1) }, [status])
+
+  const { data, isFetching } = useInspections({ page, perPage: pageSize, status })
+  const rows = data?.rows || []
+  const total = data?.total || 0
+
+  const columns = [
+    {
+      title: 'Car', render: (_, r) => (
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-ink"><ClipboardCheck size={16} /></span>
+          <span className="font-medium text-gray-800">{carLine(r)}</span>
+        </div>
+      ),
+    },
+    { title: 'Requester', dataIndex: 'name', render: (n) => <span className="text-gray-600">{n}</span> },
+    { title: 'City', width: 120, render: (_, r) => <span className="text-gray-600">{r.city?.name || '—'}</span> },
+    { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <Badge s={s} /> },
+    { title: 'Requested', dataIndex: 'created_at', width: 160, render: fmt },
+    {
+      title: 'Action', align: 'right', width: 110,
+      render: (_, r) => <Button size="small" onClick={() => setOpenId(r.id)}>Manage</Button>,
+    },
+  ]
 
   return (
     <div className="w-full">
@@ -150,42 +176,29 @@ export default function Inspections() {
         <p className="mt-1 text-sm text-gray-500">Manage car-inspection requests and reports.</p>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {[{ key: '', label: 'All' }, ...STATUSES.map((s) => ({ key: s, label: s.replace('_', ' ') }))].map((f) => (
-          <button key={f.key} onClick={() => setStatus(f.key)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${status === f.key ? 'bg-ink text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{f.label}</button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup label="Status">
+          <Segmented size="large" value={status} onChange={setStatus}
+            options={[{ label: 'All', value: '' }, ...STATUSES.map((s) => ({ label: s.replace('_', ' '), value: s }))]} />
+        </FilterGroup>
+      </FilterBar>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-2">
         <Table
           rowKey="id"
-          loading={isLoading}
-          dataSource={items}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} requests` }}
+          loading={isFetching}
+          dataSource={rows}
+          columns={columns}
           scroll={{ x: 'max-content' }}
-          columns={[
-            {
-              title: 'Car', render: (_, r) => (
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-ink"><ClipboardCheck size={16} /></span>
-                  <span className="font-medium text-gray-800">{carLine(r)}</span>
-                </div>
-              ),
-            },
-            { title: 'Requester', dataIndex: 'name', render: (n) => <span className="text-gray-600">{n}</span> },
-            { title: 'City', width: 120, render: (_, r) => <span className="text-gray-600">{r.city?.name || '—'}</span> },
-            { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <Badge s={s} /> },
-            { title: 'Requested', dataIndex: 'created_at', width: 160, render: fmt },
-            {
-              title: 'Action', align: 'right', width: 110,
-              render: (_, r) => <button onClick={() => setOpenId(r.id)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Manage</button>,
-            },
-          ]}
+          pagination={{
+            current: page, pageSize, total, showSizeChanger: true,
+            showTotal: (t) => `${t} requests`,
+            onChange: (p, ps) => { setPage(p); setPageSize(ps) },
+          }}
         />
       </div>
 
-      {openId && <InspectionModal id={openId} onClose={() => setOpenId(null)} />}
+      <InspectionModal id={openId} open={!!openId} onClose={() => setOpenId(null)} />
     </div>
   )
 }

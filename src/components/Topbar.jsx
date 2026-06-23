@@ -5,8 +5,8 @@ import useAuthStore from '../store/authStore'
 import { useLogout } from '../hooks/useAuth'
 import { useAdminUnread, useAdminNotifications, useMarkAdminRead } from '../hooks/useAdminNotifications'
 
-const NOTIF_ICON = { driver_pending: UserCheck, inspection_new: ClipboardCheck, provider_new: Wrench, listing_managed_new: Car }
-const NOTIF_ROUTE = { driver_pending: '/users', inspection_new: '/inspections', provider_new: '/providers', listing_managed_new: '/listings' }
+const NOTIF_ICON = { driver_pending: UserCheck, inspection_new: ClipboardCheck, provider_new: Wrench, listing_managed_new: Car, rental_managed_new: Car }
+const NOTIF_ROUTE = { driver_pending: '/users', inspection_new: '/inspections', provider_new: '/providers', listing_managed_new: '/listings', rental_managed_new: '/rentals' }
 const timeAgo = (iso) => {
   if (!iso) return ''
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)

@@ -45,6 +45,22 @@ const adminService = {
   updateStaff: (id, payload) => api.put(`/admin/staff/${id}`, payload),
   deleteStaff: (id) => api.delete(`/admin/staff/${id}`),
 
+  // Billing — plans, settings, subscriptions
+  billingPlans: () => api.get('/admin/billing/plans'),
+  createBillingPlan: (p) => api.post('/admin/billing/plans', p),
+  updateBillingPlan: (id, p) => api.put(`/admin/billing/plans/${id}`, p),
+  deleteBillingPlan: (id) => api.delete(`/admin/billing/plans/${id}`),
+  billingSettings: () => api.get('/admin/billing/settings'),
+  updateBillingSetting: (module, p) => api.put(`/admin/billing/settings/${module}`, p),
+  billingSubscriptions: (params) => api.get('/admin/billing/subscriptions', { params }),
+  grantSubscription: (p) => api.post('/admin/billing/subscriptions/grant', p),
+
+  // Rent a Car
+  rentals: (params) => api.get('/admin/rentals', { params }),
+  setRentalStatus: (id, status) => api.post(`/admin/rentals/${id}/status`, { status }),
+  setRentalPrice: (id, price) => api.post(`/admin/rentals/${id}/price`, { price }),
+  setRentalFeatured: (id, is_featured) => api.post(`/admin/rentals/${id}/featured`, { is_featured }),
+
   // Marketplace car listings
   listings: (params) => api.get('/admin/car-listings', { params }),
   listing: (id) => api.get(`/admin/car-listings/${id}`),
