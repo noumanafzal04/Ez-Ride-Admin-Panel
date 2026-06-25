@@ -21,5 +21,5 @@ export const NAV_ITEMS = [
   { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', group: 'Access' },
   { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck, perm: 'roles.view', group: 'Access' },
 
-  { to: '/settings', label: 'Settings', icon: Settings, perm: 'settings.view', group: 'System' },
+  { to: '/settings', label: 'Module Settings', icon: Settings, perm: 'settings.view', group: 'System' },
 ]

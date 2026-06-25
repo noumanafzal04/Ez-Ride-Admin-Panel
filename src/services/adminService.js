@@ -39,6 +39,10 @@ const adminService = {
   updateCategory: (id, payload) => api.put(`/admin/service-categories/${id}`, payload),
   deleteCategory: (id) => api.delete(`/admin/service-categories/${id}`),
 
+  // Module on/off settings (which app features are live)
+  modules: () => api.get('/admin/modules'),
+  setModule: (key, enabled) => api.put(`/admin/modules/${key}`, { enabled }),
+
   // Staff
   staff: () => api.get('/admin/staff'),
   createStaff: (payload) => api.post('/admin/staff', payload),

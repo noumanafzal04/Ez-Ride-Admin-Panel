@@ -14,6 +14,7 @@ import Rentals from './pages/Rentals'
 import Inspections from './pages/Inspections'
 import Reports from './pages/Reports'
 import Billing from './pages/Billing'
+import Modules from './pages/Modules'
 
 export default function App() {
   return (
@@ -33,7 +34,7 @@ export default function App() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/staff" element={<Staff />} />
           <Route path="/roles" element={<Roles />} />
-          <Route path="/settings" element={<Placeholder title="Settings" />} />
+          <Route path="/settings" element={<Modules />} />
         </Route>
       </Route>
 
