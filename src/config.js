@@ -9,4 +9,7 @@ const config = {
   REVERB_SCHEME: import.meta.env.VITE_REVERB_SCHEME || 'ws',
 }
 
+
+
+
 export default config
