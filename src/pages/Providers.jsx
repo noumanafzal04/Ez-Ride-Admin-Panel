@@ -1,12 +1,73 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Segmented, Button, Popconfirm, App } from 'antd'
-import { BadgeCheck, XCircle, PauseCircle } from 'lucide-react'
+import { Table, Tag, Segmented, Button, Popconfirm, App, Modal, Form, Input, Select } from 'antd'
+import { BadgeCheck, XCircle, PauseCircle, Plus } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import usePermissions from '../hooks/usePermissions'
 import { FilterBar, FilterGroup } from '../components/FilterBar'
-import { useProviders, useSetProviderStatus } from '../hooks/useProviders'
+import { useProviders, useSetProviderStatus, useCreateProvider } from '../hooks/useProviders'
+import adminService from '../services/adminService'
 
 const STATUS_COLOR = { approved: 'success', pending: 'warning', rejected: 'error', suspended: 'default' }
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+
+function AddProviderModal({ open, onClose }) {
+  const [form] = Form.useForm()
+  const { message } = App.useApp()
+  const { data: cities = [] } = useQuery({
+    queryKey: ['admin-cities'], enabled: open, staleTime: 36e5,
+    queryFn: () => adminService.cities().then((r) => r.data?.data?.cities || []),
+  })
+  const { data: cats = [] } = useQuery({
+    queryKey: ['admin-service-categories'], enabled: open, staleTime: 36e5,
+    queryFn: () => adminService.serviceCategories().then((r) => r.data?.data?.categories || []),
+  })
+  const create = useCreateProvider({
+    onSuccess: () => { message.success('Provider created'); form.resetFields(); onClose() },
+    onError: (e) => message.error(e.response?.data?.message || 'Could not create provider.'),
+  })
+  return (
+    <Modal
+      title="Add service provider"
+      open={open}
+      onCancel={onClose}
+      okText="Create provider"
+      confirmLoading={create.isPending}
+      onOk={() => form.validateFields().then((v) => create.mutate(v))}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" className="pt-2">
+        <Form.Item name="business_name" label="Business name" rules={[{ required: true }]}>
+          <Input placeholder="e.g. Ali Auto Workshop" />
+        </Form.Item>
+        <div className="flex gap-3">
+          <Form.Item name="phone_number" label="Owner phone" rules={[{ required: true }]} className="flex-1"
+            tooltip="We link to this user if they exist, otherwise create the account.">
+            <Input placeholder="03001234567" />
+          </Form.Item>
+          <Form.Item name="first_name" label="Owner name" className="flex-1">
+            <Input placeholder="Optional" />
+          </Form.Item>
+        </div>
+        <Form.Item name="category_ids" label="Services offered" rules={[{ required: true, message: 'Pick at least one' }]}>
+          <Select mode="multiple" placeholder="Choose categories" optionFilterProp="label"
+            options={cats.map((c) => ({ value: c.id, label: c.name }))} />
+        </Form.Item>
+        <div className="flex gap-3">
+          <Form.Item name="city_id" label="City" className="flex-1">
+            <Select showSearch allowClear placeholder="City" optionFilterProp="label"
+              options={cities.map((c) => ({ value: c.id, label: c.name }))} />
+          </Form.Item>
+          <Form.Item name="area" label="Area" className="flex-1">
+            <Input placeholder="Area / locality" />
+          </Form.Item>
+        </div>
+        <Form.Item name="description" label="About">
+          <Input.TextArea rows={3} placeholder="Optional description" />
+        </Form.Item>
+      </Form>
+    </Modal>
+  )
+}
 
 export default function Providers() {
   const { can } = usePermissions()
@@ -14,6 +75,7 @@ export default function Providers() {
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [addOpen, setAddOpen] = useState(false)
 
   useEffect(() => { setPage(1) }, [status])
 
@@ -88,7 +150,12 @@ export default function Providers() {
         <p className="mt-1 text-sm text-gray-500">Review and verify car-service providers.</p>
       </div>
 
-      <FilterBar>
+      <FilterBar
+        title="Filter providers"
+        actions={canManage && (
+          <Button type="primary" icon={<Plus size={16} />} onClick={() => setAddOpen(true)}>Add provider</Button>
+        )}
+      >
         <FilterGroup label="Status">
           <Segmented size="large" value={status} onChange={setStatus} options={[
             { label: 'All', value: '' }, { label: 'Pending', value: 'pending' }, { label: 'Approved', value: 'approved' },
@@ -96,6 +163,8 @@ export default function Providers() {
           ]} />
         </FilterGroup>
       </FilterBar>
+
+      <AddProviderModal open={addOpen} onClose={() => setAddOpen(false)} />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-2">
         <Table

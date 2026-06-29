@@ -12,6 +12,15 @@ export const useProviders = ({ page = 1, perPage = 10, status } = {}) =>
     placeholderData: keepPreviousData,
   })
 
+export const useCreateProvider = (options = {}) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => adminService.createProvider(payload),
+    onSuccess: (...a) => { qc.invalidateQueries({ queryKey: ['admin-providers'] }); options.onSuccess?.(...a) },
+    onError: options.onError,
+  })
+}
+
 export const useSetProviderStatus = (options = {}) => {
   const qc = useQueryClient()
   return useMutation({

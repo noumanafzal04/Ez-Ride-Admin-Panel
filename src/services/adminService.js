@@ -12,6 +12,7 @@ const adminService = {
   // App users + verification
   appUsers: (params) => api.get('/admin/app-users', { params }),
   appUser: (id) => api.get(`/admin/app-users/${id}`),
+  createAppUser: (payload) => api.post('/admin/app-users', payload),
   setVerification: (id, status) => api.post(`/admin/app-users/${id}/verification`, { status }),
 
   // Reports
@@ -31,6 +32,7 @@ const adminService = {
 
   // Service providers
   providers: (params) => api.get('/admin/service-providers', { params }),
+  createProvider: (payload) => api.post('/admin/service-providers', payload),
   setProviderStatus: (id, status) => api.post(`/admin/service-providers/${id}/status`, { status }),
 
   // Service categories
@@ -42,6 +44,10 @@ const adminService = {
   // Module on/off settings (which app features are live)
   modules: () => api.get('/admin/modules'),
   setModule: (key, enabled) => api.put(`/admin/modules/${key}`, { enabled }),
+
+  // Broadcast a push/notification to an audience
+  broadcastNotification: (payload) => api.post('/admin/notifications/broadcast', payload),
+  cities: () => api.get('/admin/cities'),
 
   // Staff
   staff: () => api.get('/admin/staff'),

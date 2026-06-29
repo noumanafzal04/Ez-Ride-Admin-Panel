@@ -13,6 +13,15 @@ export const useAppUsers = ({ page = 1, perPage = 10, ...filters } = {}) =>
     placeholderData: keepPreviousData,
   })
 
+export const useCreateAppUser = (options = {}) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => adminService.createAppUser(payload),
+    onSuccess: (...a) => { qc.invalidateQueries({ queryKey: ['app-users'] }); options.onSuccess?.(...a) },
+    onError: options.onError,
+  })
+}
+
 export const useSetVerification = (options = {}) => {
   const qc = useQueryClient()
   return useMutation({

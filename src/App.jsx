@@ -15,6 +15,7 @@ import Inspections from './pages/Inspections'
 import Reports from './pages/Reports'
 import Billing from './pages/Billing'
 import Modules from './pages/Modules'
+import Announcements from './pages/Announcements'
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/staff" element={<Staff />} />
           <Route path="/roles" element={<Roles />} />
+          <Route path="/announcements" element={<Announcements />} />
           <Route path="/settings" element={<Modules />} />
         </Route>
       </Route>

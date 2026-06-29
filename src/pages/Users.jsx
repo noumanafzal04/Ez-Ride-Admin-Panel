@@ -1,9 +1,57 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Segmented, Input, Button, Popconfirm, App } from 'antd'
-import { BadgeCheck, XCircle } from 'lucide-react'
+import { Table, Tag, Segmented, Input, Button, Popconfirm, App, Modal, Form, Select, Switch } from 'antd'
+import { BadgeCheck, XCircle, UserPlus } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
-import { FilterBar, FilterGroup, FilterDivider } from '../components/FilterBar'
-import { useAppUsers, useSetVerification } from '../hooks/useUsers'
+import { FilterBar, FilterGroup } from '../components/FilterBar'
+import { useAppUsers, useSetVerification, useCreateAppUser } from '../hooks/useUsers'
+
+function AddUserModal({ open, onClose }) {
+  const [form] = Form.useForm()
+  const { message } = App.useApp()
+  const create = useCreateAppUser({
+    onSuccess: () => { message.success('User created'); form.resetFields(); onClose() },
+    onError: (e) => message.error(e.response?.data?.message || 'Could not create user.'),
+  })
+  return (
+    <Modal
+      title="Add user"
+      open={open}
+      onCancel={onClose}
+      okText="Create user"
+      confirmLoading={create.isPending}
+      onOk={() => form.validateFields().then((v) => create.mutate(v))}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" initialValues={{ user_type: 'user', verified: true }} className="pt-2">
+        <div className="flex gap-3">
+          <Form.Item name="first_name" label="First name" rules={[{ required: true }]} className="flex-1">
+            <Input placeholder="First name" />
+          </Form.Item>
+          <Form.Item name="last_name" label="Last name" className="flex-1">
+            <Input placeholder="Last name" />
+          </Form.Item>
+        </div>
+        <Form.Item name="phone_number" label="Phone number" rules={[{ required: true }]}>
+          <Input placeholder="03001234567" />
+        </Form.Item>
+        <Form.Item name="email" label="Email" rules={[{ type: 'email' }]}>
+          <Input placeholder="user@example.com (optional)" />
+        </Form.Item>
+        <Form.Item name="password" label="Password" rules={[{ required: true, min: 6 }]}>
+          <Input.Password placeholder="Min 6 characters" />
+        </Form.Item>
+        <div className="flex items-center gap-4">
+          <Form.Item name="user_type" label="Role" className="flex-1">
+            <Select options={[{ value: 'user', label: 'Rider' }, { value: 'driver', label: 'Driver' }]} />
+          </Form.Item>
+          <Form.Item name="verified" label="Verified" valuePropName="checked" tooltip="Mark phone verified so they can log in right away">
+            <Switch />
+          </Form.Item>
+        </div>
+      </Form>
+    </Modal>
+  )
+}
 
 const VERIF_STYLE = { verified: 'success', pending: 'warning', rejected: 'error' }
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -17,6 +65,7 @@ export default function Users() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [addOpen, setAddOpen] = useState(false)
 
   // Any filter change resets to page 1.
   useEffect(() => { setPage(1) }, [type, verification, search])
@@ -94,22 +143,27 @@ export default function Users() {
         <p className="mt-1 text-sm text-gray-500">Manage app users and verify driver profiles.</p>
       </div>
 
-      <FilterBar>
+      <FilterBar
+        title="Filter users"
+        actions={canVerify && (
+          <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setAddOpen(true)}>Add user</Button>
+        )}
+      >
         <FilterGroup label="Search" className="flex-1 min-w-60">
           <Input.Search size="large" allowClear placeholder="Search name, email, phone" className="w-full"
             onSearch={setSearch} onChange={(e) => !e.target.value && setSearch('')} />
         </FilterGroup>
-        <FilterDivider />
         <FilterGroup label="Type">
           <Segmented size="large" value={type} onChange={setType}
             options={[{ label: 'All', value: '' }, { label: 'Drivers', value: 'driver' }, { label: 'Users', value: 'user' }]} />
         </FilterGroup>
-        <FilterDivider />
         <FilterGroup label="Verification">
           <Segmented size="large" value={verification} onChange={setVerification}
             options={[{ label: 'Any', value: '' }, { label: 'Pending', value: 'pending' }, { label: 'Verified', value: 'verified' }, { label: 'Rejected', value: 'rejected' }]} />
         </FilterGroup>
       </FilterBar>
+
+      <AddUserModal open={addOpen} onClose={() => setAddOpen(false)} />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-2">
         <Table
