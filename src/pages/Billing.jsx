@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import {
-  Tabs, Table, Tag, Segmented, Button, Modal, Form, Input, InputNumber, Select, Switch, Popconfirm, App,
+  Tabs, Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Switch, Popconfirm, App,
 } from 'antd'
 import { Plus, Pencil, Trash2, CreditCard, Gift, SlidersHorizontal } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 import { FilterBar, FilterGroup } from '../components/FilterBar'
 import {
   useBillingPlans, useSaveBillingPlan, useDeleteBillingPlan,
@@ -85,7 +87,7 @@ function PlansTab() {
     { title: 'Duration', dataIndex: 'duration_days', width: 110, render: (d) => `${d} day${d > 1 ? 's' : ''}` },
     { title: 'Posts', dataIndex: 'post_limit', width: 90 },
     { title: 'Price', dataIndex: 'price', width: 120, render: money },
-    { title: 'Active', dataIndex: 'is_active', width: 90, render: (a) => <Tag color={a ? 'success' : 'default'}>{a ? 'Active' : 'Off'}</Tag> },
+    { title: 'Active', dataIndex: 'is_active', width: 100, render: (a) => <StatusPill tone={a ? 'green' : 'gray'}>{a ? 'Active' : 'Off'}</StatusPill> },
     ...(canManage ? [{
       title: 'Actions', align: 'right', width: 110,
       render: (_, p) => (
@@ -106,7 +108,7 @@ function PlansTab() {
           <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)} style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>New Plan</Button>
         </div>
       )}
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table rowKey="id" loading={isLoading} columns={columns} dataSource={plans} scroll={{ x: 'max-content' }}
           pagination={{ pageSize: 12, showTotal: (t) => `${t} plans` }} />
       </div>
@@ -128,10 +130,10 @@ function SettingCard({ s }) {
   const dirty = limit !== s.free_limit || enabled !== s.enforcement_enabled
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">{MODULE_LABEL[s.module]}</h3>
-        <Tag color={enabled ? 'red' : 'green'}>{enabled ? 'Paid enforced' : 'Free for all'}</Tag>
+        <h3 className="font-semibold text-ink">{MODULE_LABEL[s.module]}</h3>
+        <StatusPill tone={enabled ? 'red' : 'green'}>{enabled ? 'Paid enforced' : 'Free for all'}</StatusPill>
       </div>
       <div className="space-y-4">
         <div>
@@ -221,27 +223,27 @@ function SubscriptionsTab() {
     { title: 'Plan', width: 110, render: (_, s) => s.plan?.name || '—' },
     { title: 'Usage', width: 140, render: (_, s) => <span className="text-gray-600">{s.posts_used}/{s.posts_allowed} <span className="text-gray-400">({s.posts_left} left)</span></span> },
     { title: 'Ends', dataIndex: 'ends_at', width: 120, render: fmtDate },
-    { title: 'Status', dataIndex: 'status', width: 110, render: (st) => <Tag color={st === 'active' ? 'success' : st === 'expired' ? 'default' : 'error'} className="capitalize">{st}</Tag> },
+    { title: 'Status', dataIndex: 'status', width: 110, render: (st) => <StatusPill tone={st === 'active' ? 'green' : st === 'expired' ? 'gray' : 'red'}>{st}</StatusPill> },
     { title: 'Source', dataIndex: 'source', width: 90, render: (src) => <Tag>{src}</Tag> },
   ]
 
   return (
     <>
+      {canManage && (
+        <div className="mb-4 flex justify-end">
+          <Button type="primary" icon={<Gift size={16} />} onClick={() => setGrantOpen(true)}>Grant plan</Button>
+        </div>
+      )}
       <FilterBar>
-        <FilterGroup label="Module">
-          <Segmented size="large" value={module} onChange={setModule} options={[{ label: 'All', value: '' }, ...MODULES.map((m) => ({ label: m.label, value: m.key }))]} />
+        <FilterGroup>
+          <Select size="large" value={module} onChange={setModule} options={[{ label: 'All modules', value: '' }, ...MODULES.map((m) => ({ label: m.label, value: m.key }))]} />
         </FilterGroup>
-        <FilterGroup label="Status">
-          <Segmented size="large" value={status} onChange={setStatus} options={[{ label: 'All', value: '' }, { label: 'Active', value: 'active' }, { label: 'Expired', value: 'expired' }, { label: 'Cancelled', value: 'cancelled' }]} />
+        <FilterGroup>
+          <Select size="large" value={status} onChange={setStatus} options={[{ label: 'All statuses', value: '' }, { label: 'Active', value: 'active' }, { label: 'Expired', value: 'expired' }, { label: 'Cancelled', value: 'cancelled' }]} />
         </FilterGroup>
-        {canManage && (
-          <div className="ml-auto self-end">
-            <Button type="primary" icon={<Gift size={16} />} onClick={() => setGrantOpen(true)} style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>Grant plan</Button>
-          </div>
-        )}
       </FilterBar>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table rowKey="id" loading={isFetching} columns={columns} dataSource={rows} scroll={{ x: 'max-content' }}
           pagination={{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t) => `${t} subscriptions`, onChange: (p, ps) => { setPage(p); setPageSize(ps) } }} />
       </div>
@@ -253,10 +255,10 @@ function SubscriptionsTab() {
 export default function Billing() {
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Billing &amp; Subscriptions</h1>
-        <p className="mt-1 text-sm text-gray-500">Plans, free limits per module, and member subscriptions.</p>
-      </div>
+      <PageHeader
+        title="Billing & Subscriptions"
+        subtitle="Plans, free limits per module, and member subscriptions."
+      />
       <Tabs items={[
         { key: 'plans', label: <span className="flex items-center gap-1.5"><CreditCard size={15} /> Plans</span>, children: <PlansTab /> },
         { key: 'settings', label: <span className="flex items-center gap-1.5"><SlidersHorizontal size={15} /> Free limits</span>, children: <SettingsTab /> },

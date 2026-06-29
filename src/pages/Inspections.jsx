@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Segmented, Button, Modal, Select, Input, Spin, App } from 'antd'
+import { Table, Select, Button, Modal, Input, Spin, App } from 'antd'
 import { ClipboardCheck } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 import { FilterBar, FilterGroup } from '../components/FilterBar'
 import {
   useInspections, useInspection, useInspectionCategories,
@@ -9,14 +11,14 @@ import {
 } from '../hooks/useInspections'
 
 const STATUSES = ['pending', 'reviewing', 'scheduled', 'in_progress', 'completed', 'cancelled']
-const STATUS_COLOR = {
-  pending: 'blue', reviewing: 'gold', scheduled: 'purple',
-  in_progress: 'cyan', completed: 'success', cancelled: 'error',
+const STATUS_TONE = {
+  pending: 'blue', reviewing: 'amber', scheduled: 'violet',
+  in_progress: 'cyan', completed: 'green', cancelled: 'red',
 }
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'na']
 const carLine = (r) => [r.car_year, r.car_make, r.car_model].filter(Boolean).join(' ') || 'Car inspection'
 const fmt = (iso) => (iso ? new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
-const Badge = ({ s }) => <Tag color={STATUS_COLOR[s] || 'default'} className="capitalize">{(s || '').replace('_', ' ')}</Tag>
+const Badge = ({ s }) => <StatusPill tone={STATUS_TONE[s] || 'gray'}>{(s || '').replace('_', ' ')}</StatusPill>
 
 function InspectionModal({ id, open, onClose }) {
   const { can } = usePermissions()
@@ -146,7 +148,7 @@ export default function Inspections() {
 
   useEffect(() => { setPage(1) }, [status])
 
-  const { data, isFetching } = useInspections({ page, perPage: pageSize, status })
+  const { data, isFetching, refetch } = useInspections({ page, perPage: pageSize, status })
   const rows = data?.rows || []
   const total = data?.total || 0
 
@@ -164,26 +166,28 @@ export default function Inspections() {
     { title: 'Status', dataIndex: 'status', width: 130, render: (s) => <Badge s={s} /> },
     { title: 'Requested', dataIndex: 'created_at', width: 160, render: fmt },
     {
-      title: 'Action', align: 'right', width: 110,
+      title: '', align: 'right', width: 110,
       render: (_, r) => <Button size="small" onClick={() => setOpenId(r.id)}>Manage</Button>,
     },
   ]
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Inspections</h1>
-        <p className="mt-1 text-sm text-gray-500">Manage car-inspection requests and reports.</p>
-      </div>
+      <PageHeader
+        title="Inspections"
+        subtitle="Manage car-inspection requests and reports."
+        onRefresh={refetch}
+        refreshing={isFetching}
+      />
 
       <FilterBar>
-        <FilterGroup label="Status">
-          <Segmented size="large" value={status} onChange={setStatus}
-            options={[{ label: 'All', value: '' }, ...STATUSES.map((s) => ({ label: s.replace('_', ' '), value: s }))]} />
+        <FilterGroup>
+          <Select size="large" value={status} onChange={setStatus}
+            options={[{ label: 'All statuses', value: '' }, ...STATUSES.map((s) => ({ label: s.replace('_', ' '), value: s }))]} />
         </FilterGroup>
       </FilterBar>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table
           rowKey="id"
           loading={isFetching}

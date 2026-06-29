@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Users, BadgeCheck, Car, ClipboardCheck, Wrench, Loader2,
-  UserCheck, RefreshCw, ArrowUpRight,
+  UserCheck, RefreshCw,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -12,6 +12,7 @@ import { useAdminNotifications } from '../hooks/useAdminNotifications'
 import useAuthStore from '../store/authStore'
 import RangeFilter from '../components/RangeFilter'
 import { rangeFromPreset } from '../utils/dateRange'
+import { StatCard, StatCards, SoftStat } from '../components/StatCard'
 
 const DASH_PRESETS = [
   { key: 'today', label: 'Today' },
@@ -59,19 +60,10 @@ const ChartTip = ({ active, payload, label }) => {
   )
 }
 
-const Kpi = ({ icon: Icon, label, value, tint, accent }) => (
-  <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-    <div className={`absolute right-0 top-0 h-20 w-20 -translate-y-6 translate-x-6 rounded-full ${accent} opacity-10`} />
-    <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${tint}`}><Icon size={22} /></span>
-    <p className="mt-4 text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-    <p className="mt-0.5 text-sm text-gray-500">{label}</p>
-  </div>
-)
-
 const Card = ({ title, subtitle, children, className = '' }) => (
-  <div className={`rounded-2xl border border-gray-200 bg-white p-5 ${className}`}>
+  <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}>
     <div className="mb-4">
-      <h2 className="font-semibold text-gray-900">{title}</h2>
+      <h2 className="font-semibold text-ink">{title}</h2>
       {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
     </div>
     {children}
@@ -148,7 +140,7 @@ export default function Dashboard() {
   return (
     <div className="w-full space-y-6">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-ink to-ink-700 p-6 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-ink to-ink-700 p-6 text-white shadow-sm">
         <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-brand-400/10" />
         <div className="absolute -bottom-14 right-28 h-36 w-36 rounded-full bg-white/5" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -166,13 +158,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi icon={Users} label="Total Users" value={r.users.total} tint="bg-blue-50 text-blue-600" accent="bg-blue-500" />
-        <Kpi icon={BadgeCheck} label="Pending Verifications" value={r.driver_verification.pending} tint="bg-amber-50 text-amber-600" accent="bg-amber-500" />
-        <Kpi icon={Car} label="Completed Rides" value={r.rides.completed} tint="bg-emerald-50 text-emerald-600" accent="bg-emerald-500" />
-        <Kpi icon={ClipboardCheck} label="Inspection Requests" value={r.inspections.total} tint="bg-violet-50 text-violet-600" accent="bg-violet-500" />
-      </div>
+      {/* Headline KPIs */}
+      <StatCards className="mb-0">
+        <StatCard tone="violet" label="Total users" value={r.users.total} icon={Users} />
+        <StatCard tone="amber" label="Pending verifications" value={r.driver_verification.pending} icon={BadgeCheck} />
+        <StatCard tone="teal" label="Completed rides" value={r.rides.completed} icon={Car} />
+        <StatCard tone="blue" label="Inspection requests" value={r.inspections.total} icon={ClipboardCheck} />
+      </StatCards>
 
       {/* Range filter */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -182,10 +174,10 @@ export default function Dashboard() {
 
       {/* Period KPIs */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi icon={Users} label="New users" value={r.period.new_users} tint="bg-blue-50 text-blue-600" accent="bg-blue-500" />
-        <Kpi icon={Car} label="New rides" value={r.period.new_rides} tint="bg-teal-50 text-teal-600" accent="bg-teal-500" />
-        <Kpi icon={ClipboardCheck} label="Bookings" value={r.period.new_bookings} tint="bg-emerald-50 text-emerald-600" accent="bg-emerald-500" />
-        <Kpi icon={Wrench} label="New listings" value={r.period.new_listings} tint="bg-orange-50 text-orange-600" accent="bg-orange-500" />
+        <SoftStat tone="blue" label="New users" value={r.period.new_users} icon={Users} />
+        <SoftStat tone="teal" label="New rides" value={r.period.new_rides} icon={Car} />
+        <SoftStat tone="emerald" label="Bookings" value={r.period.new_bookings} icon={ClipboardCheck} />
+        <SoftStat tone="orange" label="New listings" value={r.period.new_listings} icon={Wrench} />
       </div>
 
       {/* Trend + verification donut */}

@@ -1,8 +1,10 @@
-import { App, Switch, Tag, Spin } from 'antd'
+import { App, Switch, Spin } from 'antd'
 import { Car, ClipboardCheck, CarFront, Wrench, Tag as TagIcon, ToggleLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import adminService from '../services/adminService'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 
 // Per-module presentation (icon + colour + blurb) keyed by the backend `key`.
 const META = {
@@ -43,19 +45,11 @@ export default function Modules() {
   const liveCount = modules.filter((m) => m.enabled).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-ink text-brand-400">
-          <ToggleLeft size={22} />
-        </span>
-        <div>
-          <h1 className="text-xl font-semibold text-ink">Module Settings</h1>
-          <p className="max-w-2xl text-sm text-gray-500">
-            Turn features on or off across the mobile app. A disabled module disappears from the
-            app's home, search, sidebar and tabs for everyone — instantly on their next refresh.
-          </p>
-        </div>
-      </div>
+    <div className="w-full space-y-6">
+      <PageHeader
+        title="Module Settings"
+        subtitle="Turn features on or off across the mobile app. A disabled module disappears from the app's home, search, sidebar and tabs for everyone — instantly on their next refresh."
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-20"><Spin /></div>
@@ -72,8 +66,8 @@ export default function Modules() {
               return (
                 <div
                   key={m.key}
-                  className={`flex items-start gap-4 rounded-2xl border bg-white p-5 transition
-                    ${m.enabled ? 'border-emerald-200 shadow-sm' : 'border-gray-100'}`}
+                  className={`flex items-start gap-4 rounded-2xl border bg-white p-5 shadow-sm transition
+                    ${m.enabled ? 'border-emerald-200' : 'border-gray-200'}`}
                 >
                   <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${meta.tint}`}>
                     <Ico size={22} />
@@ -82,9 +76,7 @@ export default function Modules() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-ink">{m.name}</h3>
-                      <Tag color={m.enabled ? 'green' : 'default'} className="m-0">
-                        {m.enabled ? 'Live' : 'Hidden'}
-                      </Tag>
+                      <StatusPill tone={m.enabled ? 'green' : 'gray'}>{m.enabled ? 'Live' : 'Hidden'}</StatusPill>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{meta.desc}</p>
                     <p className="mt-1 text-[11px] text-gray-300">key: {m.key}</p>

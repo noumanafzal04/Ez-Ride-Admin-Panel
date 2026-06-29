@@ -1,16 +1,29 @@
 import { useState, useEffect } from 'react'
-import { Table, Switch, Modal, InputNumber, Tag, Segmented, Button, Popconfirm, App } from 'antd'
-import { BadgeCheck, XCircle, PauseCircle, CarFront, ShieldCheck, ClipboardCheck } from 'lucide-react'
+import { Table, Switch, Modal, InputNumber, Tag, Select, Button, Popconfirm, Tooltip, App } from 'antd'
+import { BadgeCheck, XCircle, PauseCircle, CarFront, ShieldCheck, ClipboardCheck, Download } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 import config from '../config'
-import { FilterBar, FilterGroup, FilterDivider } from '../components/FilterBar'
+import { FilterBar, FilterGroup } from '../components/FilterBar'
 import { useRentals, useSetRentalStatus, useSetRentalPrice, useSetRentalFeatured } from '../hooks/useRentals'
 
 const STORAGE_BASE = config.BASE_URL.replace(/\/api\/v1\/?$/, '/')
 const imgUrl = (p) => (p ? `${STORAGE_BASE}storage/${p}` : null)
 const money = (n) => (n == null ? '—' : `Rs. ${Number(n).toLocaleString()}`)
-const STATUS_COLOR = { active: 'success', pending: 'warning', paused: 'default', rejected: 'error', inactive: 'default' }
+const STATUS_TONE = { active: 'green', pending: 'amber', paused: 'gray', rejected: 'red', inactive: 'gray' }
+const statusLabel = (s) => (s === 'pending' ? 'In review' : s)
 const RT_LABEL = { with_driver: 'With driver', self_drive: 'Self-drive', both: 'Driver / Self' }
+
+const exportCsv = (rows) => {
+  const head = ['ID', 'Title', 'Owner', 'City', 'Type', 'Rental', 'Price/day', 'Status', 'Featured']
+  const body = rows.map((r) => [r.id, r.title, r.owner?.name, r.city?.name, r.is_managed ? 'Managed' : 'Self', RT_LABEL[r.rental_type] || r.rental_type, r.price_per_day, r.status, r.is_featured ? 'Yes' : 'No'])
+  const csv = [head, ...body].map((r) => r.map((c) => `"${(c ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+  const a = document.createElement('a')
+  a.href = url; a.download = 'rentals.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function Rentals() {
   const { can } = usePermissions()
@@ -25,7 +38,7 @@ export default function Rentals() {
 
   useEffect(() => { setPage(1) }, [status, type])
 
-  const { data, isFetching } = useRentals({ page, perPage: pageSize, status, type })
+  const { data, isFetching, refetch } = useRentals({ page, perPage: pageSize, status, type })
   const rows = data?.rows || []
   const total = data?.total || 0
 
@@ -65,28 +78,28 @@ export default function Rentals() {
       ),
     },
     { title: 'Inspected', width: 100, align: 'center', render: (_, r) => r.is_inspected ? <Tag color="success" icon={<ClipboardCheck size={11} className="inline -mt-0.5 mr-1" />}>{r.inspection?.grade}</Tag> : <span className="text-gray-300">—</span> },
-    { title: 'Status', dataIndex: 'status', width: 110, render: (s) => <Tag color={STATUS_COLOR[s] || 'default'} className="capitalize">{s === 'pending' ? 'In review' : s}</Tag> },
+    { title: 'Status', dataIndex: 'status', width: 120, render: (s) => <StatusPill tone={STATUS_TONE[s] || 'gray'}>{statusLabel(s)}</StatusPill> },
     { title: 'Featured', width: 90, align: 'center', render: (_, r) => <Switch size="small" checked={!!r.is_featured} disabled={!canManage} loading={featuredMut.isPending && featuredMut.variables?.id === r.id} onChange={(v) => featuredMut.mutate({ id: r.id, is_featured: v })} /> },
     {
-      title: 'Actions', align: 'right', width: 250,
+      title: '', align: 'right', width: 150,
       render: (_, r) => {
         if (!canManage) return null
         const busy = statusMut.isPending && statusMut.variables?.id === r.id
         return (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1.5">
             {(r.status === 'pending' || r.status === 'rejected' || r.status === 'paused' || r.status === 'inactive') && (
               <Popconfirm title="Approve & publish this rental?" okText="Approve" onConfirm={() => statusMut.mutate({ id: r.id, status: 'active' })}>
-                <Button size="small" icon={<BadgeCheck size={14} />} loading={busy} className="text-emerald-600! border-emerald-200!">Approve</Button>
+                <Tooltip title="Approve"><Button size="small" type="text" icon={<BadgeCheck size={17} />} loading={busy} className="text-emerald-600!" /></Tooltip>
               </Popconfirm>
             )}
             {r.status === 'active' && (
               <Popconfirm title="Pause this rental?" okText="Pause" onConfirm={() => statusMut.mutate({ id: r.id, status: 'paused' })}>
-                <Button size="small" icon={<PauseCircle size={14} />} loading={busy}>Pause</Button>
+                <Tooltip title="Pause"><Button size="small" type="text" icon={<PauseCircle size={17} />} loading={busy} className="text-amber-600!" /></Tooltip>
               </Popconfirm>
             )}
             {r.status !== 'rejected' && (
               <Popconfirm title="Reject this rental?" okText="Reject" okButtonProps={{ danger: true }} onConfirm={() => statusMut.mutate({ id: r.id, status: 'rejected' })}>
-                <Button size="small" danger icon={<XCircle size={14} />} loading={busy}>Reject</Button>
+                <Tooltip title="Reject"><Button size="small" type="text" danger icon={<XCircle size={17} />} loading={busy} /></Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -97,27 +110,29 @@ export default function Rentals() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Rent a Car</h1>
-        <p className="mt-1 text-sm text-gray-500">Review managed rentals, set daily prices, approve and feature cars.</p>
-      </div>
+      <PageHeader
+        title="Rent a Car"
+        subtitle="Review managed rentals, set daily prices, approve and feature cars."
+        onRefresh={refetch}
+        refreshing={isFetching}
+        actions={<Tooltip title="Export CSV"><Button icon={<Download size={16} />} onClick={() => exportCsv(rows)} /></Tooltip>}
+      />
 
       <FilterBar>
-        <FilterGroup label="Status">
-          <Segmented size="large" value={status} onChange={setStatus} options={[
-            { label: 'All', value: '' }, { label: 'In review', value: 'pending' }, { label: 'Active', value: 'active' },
+        <FilterGroup>
+          <Select size="large" value={status} onChange={setStatus} options={[
+            { label: 'All statuses', value: '' }, { label: 'In review', value: 'pending' }, { label: 'Active', value: 'active' },
             { label: 'Paused', value: 'paused' }, { label: 'Rejected', value: 'rejected' },
           ]} />
         </FilterGroup>
-        <FilterDivider />
-        <FilterGroup label="Listing type">
-          <Segmented size="large" value={type} onChange={setType} options={[
+        <FilterGroup>
+          <Select size="large" value={type} onChange={setType} options={[
             { label: 'All types', value: '' }, { label: 'EZRide managed', value: 'managed' }, { label: 'Self', value: 'self' },
           ]} />
         </FilterGroup>
       </FilterBar>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table rowKey="id" loading={isFetching} columns={columns} dataSource={rows} scroll={{ x: 'max-content' }}
           pagination={{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t) => `${t} rentals`, onChange: (p, ps) => { setPage(p); setPageSize(ps) } }} />
       </div>

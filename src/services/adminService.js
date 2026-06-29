@@ -11,9 +11,15 @@ const adminService = {
 
   // App users + verification
   appUsers: (params) => api.get('/admin/app-users', { params }),
+  appUserStats: () => api.get('/admin/app-users/stats'),
   appUser: (id) => api.get(`/admin/app-users/${id}`),
   createAppUser: (payload) => api.post('/admin/app-users', payload),
   setVerification: (id, status) => api.post(`/admin/app-users/${id}/verification`, { status }),
+
+  // Rides management
+  rides: (params) => api.get('/admin/rides', { params }),
+  rideStats: () => api.get('/admin/rides/stats'),
+  cancelRide: (id) => api.post(`/admin/rides/${id}/cancel`),
 
   // Reports
   reports: (params) => api.get('/admin/reports/summary', { params }),

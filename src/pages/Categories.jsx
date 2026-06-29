@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm, Tag, App } from 'antd'
+import { Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm, App } from 'antd'
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
 import { useServiceCategories, useSaveCategory, useDeleteCategory } from '../hooks/useCategories'
 
 function CategoryModal({ category, open, onClose }) {
@@ -116,20 +117,15 @@ export default function Categories() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Service Categories</h1>
-          <p className="mt-1 text-sm text-gray-500">Categories providers can offer (mechanic, car wash, AC…).</p>
-        </div>
-        {can('categories.create') && (
-          <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)}
-            style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>
-            New Category
-          </Button>
+      <PageHeader
+        title="Service Categories"
+        subtitle="Categories providers can offer (mechanic, car wash, AC…)."
+        actions={can('categories.create') && (
+          <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)}>New Category</Button>
         )}
-      </div>
+      />
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table
           rowKey="id"
           loading={isLoading}

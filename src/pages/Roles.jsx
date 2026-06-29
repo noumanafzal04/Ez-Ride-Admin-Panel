@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { Tabs, Modal, Form, Input, Checkbox, Button, Popconfirm, Tag, Table, Spin, App } from 'antd'
 import { ShieldCheck, Plus, Pencil, Trash2, Lock, Users as UsersIcon } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 import {
   useRoles, useRole, usePermissionsCatalog, useSaveRole, useDeleteRole, useStaff,
 } from '../hooks/useRbac'
@@ -122,7 +124,7 @@ function RolesGrid() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {roles.map((role) => (
-            <div key={role.id} className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:shadow-md">
+            <div key={role.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
               <div className="flex items-start justify-between">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-ink"><ShieldCheck size={20} /></span>
                 {role.is_system && <Tag icon={<Lock size={11} className="inline -mt-0.5 mr-1" />}>System</Tag>}
@@ -168,11 +170,11 @@ function StaffByRole() {
       ),
     },
     { title: 'Role', width: 160, render: (_, s) => <Tag color="geekblue">{s.role?.name || '—'}</Tag> },
-    { title: 'Status', dataIndex: 'status', width: 110, render: (st) => <Tag color={st === 'active' ? 'success' : 'default'} className="capitalize">{st}</Tag> },
+    { title: 'Status', dataIndex: 'status', width: 110, render: (st) => <StatusPill tone={st === 'active' ? 'green' : 'gray'}>{st}</StatusPill> },
     { title: 'Last login', dataIndex: 'last_login_at', width: 140, render: fmt },
   ]
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-2">
+    <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
       <Table rowKey="id" loading={isLoading} dataSource={staff} columns={columns} scroll={{ x: 'max-content' }}
         pagination={{ pageSize: 10, showTotal: (t) => `${t} users` }} />
     </div>
@@ -182,10 +184,10 @@ function StaffByRole() {
 export default function Roles() {
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Roles &amp; Permissions</h1>
-        <p className="mt-1 text-sm text-gray-500">Define what each role can access, and see who has which role.</p>
-      </div>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Define what each role can access, and see who has which role."
+      />
 
       <Tabs
         items={[

@@ -8,6 +8,8 @@ import {
 import { useReports } from '../hooks/useReports'
 import RangeFilter from '../components/RangeFilter'
 import { rangeFromPreset } from '../utils/dateRange'
+import PageHeader from '../components/PageHeader'
+import { StatCard, StatCards, SoftStat } from '../components/StatCard'
 
 const PRESETS = [
   { key: 'today', label: 'Today' },
@@ -36,15 +38,6 @@ const ChartTip = ({ active, payload, label }) => {
   )
 }
 
-const Kpi = ({ icon: Icon, label, value, tint, accent }) => (
-  <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-    <div className={`absolute right-0 top-0 h-20 w-20 -translate-y-6 translate-x-6 rounded-full ${accent} opacity-10`} />
-    <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${tint}`}><Icon size={22} /></span>
-    <p className="mt-4 text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-    <p className="mt-0.5 text-sm text-gray-500">{label}</p>
-  </div>
-)
-
 const Row = ({ label, value, total, color = 'bg-ink' }) => {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0
   return (
@@ -61,8 +54,8 @@ const Row = ({ label, value, total, color = 'bg-ink' }) => {
 }
 
 const Card = ({ title, children, className = '' }) => (
-  <div className={`rounded-2xl border border-gray-200 bg-white p-5 ${className}`}>
-    <h3 className="mb-2 font-semibold text-gray-900">{title}</h3>
+  <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}>
+    <h3 className="mb-2 font-semibold text-ink">{title}</h3>
     {children}
   </div>
 )
@@ -85,29 +78,31 @@ export default function Reports() {
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
-            <CalendarRange size={15} /> {r.range.from} → {r.range.to}
-            {isFetching && <Loader2 size={13} className="animate-spin" />}
-          </p>
-        </div>
-        <RangeFilter presets={PRESETS} active={preset} onPreset={onPreset} onCustom={onCustom} />
-      </div>
+    <div className="w-full">
+      <PageHeader
+        title="Reports"
+        subtitle={`${r.range.from} → ${r.range.to}`}
+        actions={
+          <>
+            {isFetching && <Loader2 size={16} className="animate-spin text-gray-400" />}
+            <RangeFilter presets={PRESETS} active={preset} onPreset={onPreset} onCustom={onCustom} />
+          </>
+        }
+      />
 
-      {/* Period KPIs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi icon={Users} label="New users" value={r.period.new_users} tint="bg-blue-50 text-blue-600" accent="bg-blue-500" />
-        <Kpi icon={Car} label="New rides posted" value={r.period.new_rides} tint="bg-teal-50 text-teal-600" accent="bg-teal-500" />
-        <Kpi icon={CheckCircle2} label="Bookings" value={r.period.new_bookings} tint="bg-emerald-50 text-emerald-600" accent="bg-emerald-500" />
-        <Kpi icon={Tag} label="New listings" value={r.period.new_listings} tint="bg-orange-50 text-orange-600" accent="bg-orange-500" />
-      </div>
+      {/* Period headline KPIs */}
+      <StatCards>
+        <StatCard tone="violet" label="New users" value={r.period.new_users} icon={Users} />
+        <StatCard tone="teal" label="New rides posted" value={r.period.new_rides} icon={Car} />
+        <StatCard tone="emerald" label="Bookings" value={r.period.new_bookings} icon={CheckCircle2} />
+        <StatCard tone="amber" label="New listings" value={r.period.new_listings} icon={Tag} />
+      </StatCards>
 
       {/* Trend */}
-      <Card title="Activity trend">
-        <p className="-mt-1 mb-3 text-sm text-gray-500">{totalNew} new records in this period</p>
+      <Card title="Activity trend" className="mb-6">
+        <p className="-mt-1 mb-3 flex items-center gap-1.5 text-sm text-gray-500">
+          <CalendarRange size={14} /> {totalNew} new records in this period
+        </p>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={r.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
             <defs>
@@ -131,15 +126,15 @@ export default function Reports() {
       </Card>
 
       {/* Secondary period stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Kpi icon={ClipboardCheck} label="Inspections" value={r.period.new_inspections} tint="bg-violet-50 text-violet-600" accent="bg-violet-500" />
-        <Kpi icon={Wrench} label="Service requests" value={r.period.new_service_bookings} tint="bg-cyan-50 text-cyan-600" accent="bg-cyan-500" />
-        <Kpi icon={Wrench} label="New providers" value={r.period.new_providers} tint="bg-amber-50 text-amber-600" accent="bg-amber-500" />
-        <Kpi icon={TrendingUp} label="Completed bookings" value={r.period.completed_bookings} tint="bg-emerald-50 text-emerald-600" accent="bg-emerald-500" />
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <SoftStat tone="violet" label="Inspections" value={r.period.new_inspections} icon={ClipboardCheck} />
+        <SoftStat tone="cyan" label="Service requests" value={r.period.new_service_bookings} icon={Wrench} />
+        <SoftStat tone="amber" label="New providers" value={r.period.new_providers} icon={Wrench} />
+        <SoftStat tone="emerald" label="Completed bookings" value={r.period.completed_bookings} icon={TrendingUp} />
       </div>
 
       {/* All-time breakdowns */}
-      <h2 className="pt-2 text-lg font-semibold text-gray-900">All-time breakdown</h2>
+      <h2 className="mb-4 pt-2 text-lg font-semibold text-ink">All-time breakdown</h2>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card title="Users">
           <Row label="Drivers" value={r.users.drivers} total={r.users.total} color="bg-blue-500" />

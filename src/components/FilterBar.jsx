@@ -1,40 +1,42 @@
-import { SlidersHorizontal } from 'lucide-react'
-
-// Polished, consistent filter panel used across admin list pages.
-//   <FilterBar title="Users" actions={<Button>Add user</Button>}>
-//     <FilterGroup label="Search" className="flex-1 min-w-60"><Input.Search size="large" /></FilterGroup>
-//     <FilterGroup label="Status"><Segmented size="large" /></FilterGroup>
+// Clean single-row filter bar (DreamsPOS-style):
+//   • left  — the main search (full-flex) via the `search` prop
+//   • right — filter controls passed as children (Select dropdowns, etc.)
+//
+// Primary page actions (Add / export) live in <PageHeader>, not here.
+//
+//   <FilterBar search={<Input.Search size="large" />}>
+//     <FilterGroup><Select placeholder="Type" /></FilterGroup>
+//     <FilterGroup><Select placeholder="Status" /></FilterGroup>
 //   </FilterBar>
-export function FilterBar({ children, title = 'Filters', actions, className = '' }) {
+export function FilterBar({ children, search, className = '' }) {
+  const hasExtra = !!children && (!Array.isArray(children) || children.some(Boolean))
   return (
-    <div className={`mb-5 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm ${className}`}>
-      {/* Header: title + page actions (Add / Create …) */}
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/60 px-4 py-2.5">
-        <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
-          <SlidersHorizontal size={15} className="text-gray-400" />
-          {title}
-        </span>
-        {actions && <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>}
-      </div>
-
-      {/* Controls — wrap neatly into rows, aligned to the bottom of each cell */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-3.5 px-4 py-4">
-        {children}
+    <div className={`mb-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
+      <div className="flex flex-wrap items-center gap-3">
+        {search && <div className="min-w-60 flex-1 *:w-full">{search}</div>}
+        {hasExtra && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
+// Thin wrapper giving each filter control a consistent min-width.
+// Pass `label` to prefix a small inline caption; otherwise the control
+// (with its own placeholder) stands alone — like the reference.
 export function FilterGroup({ label, children, className = '' }) {
   return (
-    <div className={`flex min-w-37.5 flex-col gap-1.5 ${className}`}>
-      <span className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</span>
-      <div className="flex w-full items-center *:w-full">{children}</div>
+    <div className={`flex min-w-44 items-center gap-2 *:w-full ${className}`}>
+      {label && <span className="shrink-0 text-xs font-medium text-gray-400">{label}</span>}
+      {children}
     </div>
   )
 }
 
-// Kept for backwards-compat with pages that still import it — no longer renders a divider.
+// Backwards-compat — no longer renders anything.
 export function FilterDivider() {
   return null
 }

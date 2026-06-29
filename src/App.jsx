@@ -7,6 +7,7 @@ import Placeholder from './pages/Placeholder'
 import Roles from './pages/Roles'
 import Staff from './pages/Staff'
 import Users from './pages/Users'
+import Rides from './pages/Rides'
 import Categories from './pages/Categories'
 import Providers from './pages/Providers'
 import Listings from './pages/Listings'
@@ -26,6 +27,7 @@ export default function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/rides" element={<Rides />} />
           <Route path="/inspections" element={<Inspections />} />
           <Route path="/providers" element={<Providers />} />
           <Route path="/listings" element={<Listings />} />

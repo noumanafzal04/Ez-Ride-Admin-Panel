@@ -3,6 +3,8 @@ import { Table, Tag, Modal, Form, Input, Select, Button, Popconfirm, App } from 
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
 import useAuthStore from '../store/authStore'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
 import { useStaff, useRoles, useSaveStaff, useDeleteStaff } from '../hooks/useRbac'
 
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -103,7 +105,7 @@ export default function Staff() {
     { title: 'Role', width: 150, render: (_, s) => <Tag color="geekblue">{s.role?.name || '—'}</Tag> },
     {
       title: 'Status', dataIndex: 'status', width: 110,
-      render: (st) => <Tag color={st === 'active' ? 'success' : 'default'} className="capitalize">{st}</Tag>,
+      render: (st) => <StatusPill tone={st === 'active' ? 'green' : 'gray'}>{st}</StatusPill>,
     },
     { title: 'Last login', dataIndex: 'last_login_at', width: 130, render: fmt },
     {
@@ -123,20 +125,15 @@ export default function Staff() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Staff</h1>
-          <p className="mt-1 text-sm text-gray-500">Add employees and assign roles to control their access.</p>
-        </div>
-        {can('staff.create') && (
-          <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)}
-            style={{ background: '#FFD400', color: '#07163b', fontWeight: 600 }}>
-            Add Employee
-          </Button>
+      <PageHeader
+        title="Staff"
+        subtitle="Add employees and assign roles to control their access."
+        actions={can('staff.create') && (
+          <Button type="primary" icon={<Plus size={16} />} onClick={() => setEditing(null)}>Add Employee</Button>
         )}
-      </div>
+      />
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table
           rowKey="id"
           loading={isLoading}

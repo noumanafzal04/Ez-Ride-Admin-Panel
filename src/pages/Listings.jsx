@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Table, Switch, Modal, InputNumber, Tag, Segmented, Button, Popconfirm, App } from 'antd'
-import { BadgeCheck, XCircle, CheckCircle2, Tag as TagIcon, ShieldCheck, ClipboardCheck } from 'lucide-react'
+import { Table, Switch, Modal, InputNumber, Tag, Select, Button, Popconfirm, Tooltip, App } from 'antd'
+import { BadgeCheck, XCircle, CheckCircle2, Tag as TagIcon, ShieldCheck, ClipboardCheck, Download } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
-import { FilterBar, FilterGroup, FilterDivider } from '../components/FilterBar'
+import PageHeader from '../components/PageHeader'
+import StatusPill from '../components/StatusPill'
+import { FilterBar, FilterGroup } from '../components/FilterBar'
 import config from '../config'
 import {
   useListings, useSetListingStatus, useSetListingPrice, useSetListingFeatured,
@@ -11,7 +13,18 @@ import {
 const STORAGE_BASE = config.BASE_URL.replace(/\/api\/v1\/?$/, '/')
 const imgUrl = (path) => (path ? `${STORAGE_BASE}storage/${path}` : null)
 const money = (n) => (n == null ? '—' : `Rs. ${Number(n).toLocaleString()}`)
-const STATUS_COLOR = { active: 'success', pending: 'warning', sold: 'default', rejected: 'error', draft: 'default', inactive: 'default' }
+const STATUS_TONE = { active: 'green', pending: 'amber', sold: 'gray', rejected: 'red', draft: 'gray', inactive: 'gray' }
+const statusLabel = (s) => (s === 'pending' ? 'In review' : s)
+
+const exportCsv = (rows) => {
+  const head = ['ID', 'Title', 'Seller', 'City', 'Type', 'Price', 'Status', 'Featured']
+  const body = rows.map((l) => [l.id, l.title, l.seller?.name, l.city?.name, l.is_managed ? 'Managed' : 'Self', l.price, l.status, l.is_featured ? 'Yes' : 'No'])
+  const csv = [head, ...body].map((r) => r.map((c) => `"${(c ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+  const a = document.createElement('a')
+  a.href = url; a.download = 'listings.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function Listings() {
   const { can } = usePermissions()
@@ -26,7 +39,7 @@ export default function Listings() {
 
   useEffect(() => { setPage(1) }, [status, type])
 
-  const { data, isFetching } = useListings({ page, perPage: pageSize, status, type })
+  const { data, isFetching, refetch } = useListings({ page, perPage: pageSize, status, type })
   const rows = data?.rows || []
   const total = data?.total || 0
 
@@ -81,8 +94,8 @@ export default function Listings() {
         : <span className="text-gray-300">—</span>,
     },
     {
-      title: 'Status', dataIndex: 'status', width: 110,
-      render: (s) => <Tag color={STATUS_COLOR[s] || 'default'} className="capitalize">{s === 'pending' ? 'In review' : s}</Tag>,
+      title: 'Status', dataIndex: 'status', width: 120,
+      render: (s) => <StatusPill tone={STATUS_TONE[s] || 'gray'}>{statusLabel(s)}</StatusPill>,
     },
     {
       title: 'Featured', width: 90, align: 'center',
@@ -91,25 +104,25 @@ export default function Listings() {
         onChange={(v) => featuredMut.mutate({ id: l.id, is_featured: v })} />,
     },
     {
-      title: 'Actions', align: 'right', width: 260,
+      title: '', align: 'right', width: 150,
       render: (_, l) => {
         if (!canManage) return null
         const busy = statusMut.isPending && statusMut.variables?.id === l.id
         return (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1.5">
             {(l.status === 'pending' || l.status === 'rejected' || l.status === 'inactive') && (
               <Popconfirm title="Approve & publish this listing?" okText="Approve" onConfirm={() => statusMut.mutate({ id: l.id, status: 'active' })}>
-                <Button size="small" icon={<BadgeCheck size={14} />} loading={busy} className="text-emerald-600! border-emerald-200!">Approve</Button>
+                <Tooltip title="Approve"><Button size="small" type="text" icon={<BadgeCheck size={17} />} loading={busy} className="text-emerald-600!" /></Tooltip>
               </Popconfirm>
             )}
             {l.status === 'active' && (
               <Popconfirm title="Mark this listing as sold?" okText="Mark sold" onConfirm={() => statusMut.mutate({ id: l.id, status: 'sold' })}>
-                <Button size="small" icon={<CheckCircle2 size={14} />} loading={busy}>Sold</Button>
+                <Tooltip title="Mark sold"><Button size="small" type="text" icon={<CheckCircle2 size={17} />} loading={busy} className="text-gray-500!" /></Tooltip>
               </Popconfirm>
             )}
             {l.status !== 'rejected' && l.status !== 'sold' && (
               <Popconfirm title="Reject this listing?" okText="Reject" okButtonProps={{ danger: true }} onConfirm={() => statusMut.mutate({ id: l.id, status: 'rejected' })}>
-                <Button size="small" danger icon={<XCircle size={14} />} loading={busy}>Reject</Button>
+                <Tooltip title="Reject"><Button size="small" type="text" danger icon={<XCircle size={17} />} loading={busy} /></Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -120,27 +133,29 @@ export default function Listings() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Car Listings</h1>
-        <p className="mt-1 text-sm text-gray-500">Review managed sales, set prices, approve and feature listings.</p>
-      </div>
+      <PageHeader
+        title="Car Listings"
+        subtitle="Review managed sales, set prices, approve and feature listings."
+        onRefresh={refetch}
+        refreshing={isFetching}
+        actions={<Tooltip title="Export CSV"><Button icon={<Download size={16} />} onClick={() => exportCsv(rows)} /></Tooltip>}
+      />
 
       <FilterBar>
-        <FilterGroup label="Status">
-          <Segmented size="large" value={status} onChange={setStatus} options={[
-            { label: 'All', value: '' }, { label: 'In review', value: 'pending' }, { label: 'Active', value: 'active' },
+        <FilterGroup>
+          <Select size="large" value={status} onChange={setStatus} options={[
+            { label: 'All statuses', value: '' }, { label: 'In review', value: 'pending' }, { label: 'Active', value: 'active' },
             { label: 'Sold', value: 'sold' }, { label: 'Rejected', value: 'rejected' },
           ]} />
         </FilterGroup>
-        <FilterDivider />
-        <FilterGroup label="Listing type">
-          <Segmented size="large" value={type} onChange={setType} options={[
+        <FilterGroup>
+          <Select size="large" value={type} onChange={setType} options={[
             { label: 'All types', value: '' }, { label: 'EZRide managed', value: 'managed' }, { label: 'Self', value: 'self' },
           ]} />
         </FilterGroup>
       </FilterBar>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table
           rowKey="id"
           loading={isFetching}

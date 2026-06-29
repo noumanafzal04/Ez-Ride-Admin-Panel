@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Segmented, Input, Button, Popconfirm, App, Modal, Form, Select, Switch } from 'antd'
-import { BadgeCheck, XCircle, UserPlus } from 'lucide-react'
+import { Table, Select, Input, Button, Popconfirm, App, Modal, Form, Switch, Tooltip } from 'antd'
+import { BadgeCheck, XCircle, UserPlus, Users as UsersIcon, Car, UserCheck, Clock, Download } from 'lucide-react'
 import usePermissions from '../hooks/usePermissions'
+import PageHeader from '../components/PageHeader'
+import { StatCard, StatCards } from '../components/StatCard'
+import StatusPill from '../components/StatusPill'
 import { FilterBar, FilterGroup } from '../components/FilterBar'
-import { useAppUsers, useSetVerification, useCreateAppUser } from '../hooks/useUsers'
+import { useAppUsers, useUserStats, useSetVerification, useCreateAppUser } from '../hooks/useUsers'
 
 function AddUserModal({ open, onClose }) {
   const [form] = Form.useForm()
@@ -53,9 +56,19 @@ function AddUserModal({ open, onClose }) {
   )
 }
 
-const VERIF_STYLE = { verified: 'success', pending: 'warning', rejected: 'error' }
+const VERIF_TONE = { verified: 'green', pending: 'amber', rejected: 'red' }
 const initials = (n) => (n || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')
+
+const exportCsv = (rows) => {
+  const head = ['ID', 'Name', 'Email', 'Phone', 'Type', 'Verification', 'Joined']
+  const body = rows.map((u) => [u.id, u.name, u.email, u.phone, u.user_type, u.driver_profile?.verification_status || '', u.created_at])
+  const csv = [head, ...body].map((r) => r.map((c) => `"${(c ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+  const a = document.createElement('a')
+  a.href = url; a.download = 'users.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function Users() {
   const { can } = usePermissions()
@@ -75,7 +88,8 @@ export default function Users() {
   if (verification) filters.verification = verification
   if (search.trim()) filters.search = search.trim()
 
-  const { data, isFetching } = useAppUsers({ page, perPage: pageSize, ...filters })
+  const { data, isFetching, refetch } = useAppUsers({ page, perPage: pageSize, ...filters })
+  const { data: stats = {} } = useUserStats()
   const rows = data?.rows || []
   const total = data?.total || 0
 
@@ -100,34 +114,34 @@ export default function Users() {
     },
     {
       title: 'Type', dataIndex: 'user_type', width: 110,
-      render: (t) => <Tag color={t === 'driver' ? 'geekblue' : 'default'}>{t === 'driver' ? 'Driver' : 'User'}</Tag>,
+      render: (t) => <StatusPill tone={t === 'driver' ? 'violet' : 'gray'}>{t === 'driver' ? 'Driver' : 'User'}</StatusPill>,
     },
     {
-      title: 'Verification', width: 130,
+      title: 'Verification', width: 140,
       render: (_, u) => {
         const vs = u.driver_profile?.verification_status
         return u.user_type === 'driver' && vs
-          ? <Tag color={VERIF_STYLE[vs] || 'default'} className="capitalize">{vs}</Tag>
+          ? <StatusPill tone={VERIF_TONE[vs] || 'gray'}>{vs}</StatusPill>
           : <span className="text-gray-300">—</span>
       },
     },
     { title: 'Joined', dataIndex: 'created_at', width: 130, render: fmt },
     {
-      title: 'Actions', align: 'right', width: 220,
+      title: '', align: 'right', width: 120,
       render: (_, u) => {
         if (u.user_type !== 'driver' || !canVerify) return null
         const vs = u.driver_profile?.verification_status
         const busy = setVerif.isPending && setVerif.variables?.id === u.id
         return (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1.5">
             {vs !== 'verified' && (
               <Popconfirm title="Verify this driver?" okText="Verify" onConfirm={() => setVerif.mutate({ id: u.id, status: 'verified' })}>
-                <Button size="small" icon={<BadgeCheck size={14} />} loading={busy} className="text-emerald-600! border-emerald-200!">Verify</Button>
+                <Tooltip title="Verify"><Button size="small" type="text" icon={<BadgeCheck size={17} />} loading={busy} className="text-emerald-600!" /></Tooltip>
               </Popconfirm>
             )}
             {vs !== 'rejected' && (
               <Popconfirm title="Reject this driver?" okText="Reject" okButtonProps={{ danger: true }} onConfirm={() => setVerif.mutate({ id: u.id, status: 'rejected' })}>
-                <Button size="small" danger icon={<XCircle size={14} />} loading={busy}>Reject</Button>
+                <Tooltip title="Reject"><Button size="small" type="text" danger icon={<XCircle size={17} />} loading={busy} /></Tooltip>
               </Popconfirm>
             )}
           </div>
@@ -138,36 +152,52 @@ export default function Users() {
 
   return (
     <div className="w-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-        <p className="mt-1 text-sm text-gray-500">Manage app users and verify driver profiles.</p>
-      </div>
+      <PageHeader
+        title="Users"
+        subtitle="Manage app users and verify driver profiles."
+        onRefresh={refetch}
+        refreshing={isFetching}
+        actions={
+          <>
+            <Tooltip title="Export CSV">
+              <Button icon={<Download size={16} />} onClick={() => exportCsv(rows)} />
+            </Tooltip>
+            {canVerify && (
+              <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setAddOpen(true)}>Add user</Button>
+            )}
+          </>
+        }
+      />
+
+      <StatCards>
+        <StatCard tone="violet" label="Total users" value={stats.total} icon={UsersIcon} />
+        <StatCard tone="teal" label="Drivers" value={stats.drivers} icon={Car} />
+        <StatCard tone="blue" label="Riders" value={stats.riders} icon={UserCheck} />
+        <StatCard tone="amber" label="Pending verification" value={stats.pending_drivers} icon={Clock} />
+      </StatCards>
 
       <FilterBar
-        title="Filter users"
-        actions={canVerify && (
-          <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setAddOpen(true)}>Add user</Button>
-        )}
-      >
-        <FilterGroup label="Search" className="flex-1 min-w-60">
-          <Input.Search size="large" allowClear placeholder="Search name, email, phone" className="w-full"
+        search={
+          <Input.Search size="large" allowClear placeholder="Search name, email or phone…"
             onSearch={setSearch} onChange={(e) => !e.target.value && setSearch('')} />
+        }
+      >
+        <FilterGroup>
+          <Select size="large" value={type} onChange={setType}
+            options={[{ label: 'All types', value: '' }, { label: 'Drivers', value: 'driver' }, { label: 'Riders', value: 'user' }]} />
         </FilterGroup>
-        <FilterGroup label="Type">
-          <Segmented size="large" value={type} onChange={setType}
-            options={[{ label: 'All', value: '' }, { label: 'Drivers', value: 'driver' }, { label: 'Users', value: 'user' }]} />
-        </FilterGroup>
-        <FilterGroup label="Verification">
-          <Segmented size="large" value={verification} onChange={setVerification}
-            options={[{ label: 'Any', value: '' }, { label: 'Pending', value: 'pending' }, { label: 'Verified', value: 'verified' }, { label: 'Rejected', value: 'rejected' }]} />
+        <FilterGroup>
+          <Select size="large" value={verification} onChange={setVerification}
+            options={[{ label: 'Any verification', value: '' }, { label: 'Pending', value: 'pending' }, { label: 'Verified', value: 'verified' }, { label: 'Rejected', value: 'rejected' }]} />
         </FilterGroup>
       </FilterBar>
 
       <AddUserModal open={addOpen} onClose={() => setAddOpen(false)} />
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2">
+      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
         <Table
           rowKey="id"
+          rowSelection={{ type: 'checkbox' }}
           loading={isFetching}
           columns={columns}
           dataSource={rows}

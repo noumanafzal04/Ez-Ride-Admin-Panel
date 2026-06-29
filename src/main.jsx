@@ -17,7 +17,17 @@ const antdTheme = {
     fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
   },
   components: {
-    Table: { headerBg: '#f9fafb', headerColor: '#6b7280', rowHoverBg: '#f9fafb' },
+    Table: {
+      headerBg: '#fafbfc',
+      headerColor: '#6b7280',
+      headerSplitColor: 'transparent',
+      rowHoverBg: '#f9fafb',
+      borderColor: '#f1f2f4',
+      cellPaddingBlock: 16,
+      cellPaddingInline: 16,
+      headerBorderRadius: 0,
+      fontWeightStrong: 600,
+    },
     // Selected filter option = dark navy pill with white text.
     Segmented: {
       itemSelectedBg: '#07163b',
@@ -27,6 +37,8 @@ const antdTheme = {
       trackBg: '#f1f2f4',
       borderRadius: 10,
     },
+    Select: { borderRadius: 10, controlHeight: 40, optionSelectedBg: '#fffbea' },
+    Input: { borderRadius: 10, controlHeight: 40 },
   },
 }
 

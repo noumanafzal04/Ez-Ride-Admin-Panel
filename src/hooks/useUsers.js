@@ -13,6 +13,13 @@ export const useAppUsers = ({ page = 1, perPage = 10, ...filters } = {}) =>
     placeholderData: keepPreviousData,
   })
 
+export const useUserStats = () =>
+  useQuery({
+    queryKey: ['app-user-stats'],
+    queryFn: () => adminService.appUserStats().then((r) => r.data?.data || {}),
+    staleTime: 60_000,
+  })
+
 export const useCreateAppUser = (options = {}) => {
   const qc = useQueryClient()
   return useMutation({
