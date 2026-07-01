@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, ClipboardCheck, Wrench,
-  Tags, BarChart3, UserCog, ShieldCheck, Settings, Car, CreditCard, CarFront, Megaphone, Route as RouteIcon,
+  Tags, BarChart3, UserCog, ShieldCheck, Settings, Car, CreditCard, CarFront, Megaphone, Route as RouteIcon, Star,
 } from 'lucide-react'
 
 // Admin portal modules. `perm` gates visibility (Super Admin sees all);
@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
 
   { to: '/reports', label: 'Reports', icon: BarChart3, perm: 'reports.view', group: 'Insights' },
   { to: '/billing', label: 'Billing & Plans', icon: CreditCard, perm: 'billing.view', group: 'Insights' },
+  { to: '/featured', label: 'Featured', icon: Star, perm: 'billing.view', group: 'Insights' },
 
   { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', group: 'Access' },
   { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck, perm: 'roles.view', group: 'Access' },

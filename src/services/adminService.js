@@ -9,6 +9,11 @@ const adminService = {
   updateRole: (id, payload) => api.put(`/admin/roles/${id}`, payload),
   deleteRole: (id) => api.delete(`/admin/roles/${id}`),
 
+  // Featured (paid boost)
+  featureOrders: (params) => api.get('/admin/feature-orders', { params }),
+  featureSettings: () => api.get('/admin/feature-settings'),
+  updateFeatureSetting: (module, payload) => api.put(`/admin/feature-settings/${module}`, payload),
+
   // App users + verification
   appUsers: (params) => api.get('/admin/app-users', { params }),
   appUserStats: () => api.get('/admin/app-users/stats'),

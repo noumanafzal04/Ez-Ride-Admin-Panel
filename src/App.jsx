@@ -15,6 +15,7 @@ import Rentals from './pages/Rentals'
 import Inspections from './pages/Inspections'
 import Reports from './pages/Reports'
 import Billing from './pages/Billing'
+import Featured from './pages/Featured'
 import Modules from './pages/Modules'
 import Announcements from './pages/Announcements'
 
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/categories" element={<Categories />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/billing" element={<Billing />} />
+          <Route path="/featured" element={<Featured />} />
           <Route path="/staff" element={<Staff />} />
           <Route path="/roles" element={<Roles />} />
           <Route path="/announcements" element={<Announcements />} />
