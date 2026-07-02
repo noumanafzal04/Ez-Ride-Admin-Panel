@@ -1,5 +1,5 @@
 import { App, Switch, Spin } from 'antd'
-import { Car, ClipboardCheck, CarFront, Wrench, Tag as TagIcon, ToggleLeft } from 'lucide-react'
+import { Car, ClipboardCheck, Wrench, ToggleLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import adminService from '../services/adminService'
 import usePermissions from '../hooks/usePermissions'
@@ -10,9 +10,7 @@ import StatusPill from '../components/StatusPill'
 const META = {
   ride:        { icon: Car,          tint: 'bg-blue-50 text-blue-600',     desc: 'Carpool ride posting & booking between cities.' },
   inspection:  { icon: ClipboardCheck, tint: 'bg-violet-50 text-violet-600', desc: '120-point car inspection requests.' },
-  rental:      { icon: CarFront,     tint: 'bg-rose-50 text-rose-600',     desc: 'Rent a car — self-drive or with driver.' },
   service:     { icon: Wrench,       tint: 'bg-emerald-50 text-emerald-600', desc: 'Car services & verified providers.' },
-  marketplace: { icon: TagIcon,      tint: 'bg-orange-50 text-orange-600', desc: 'Buy & sell used cars.' },
 }
 
 export default function Modules() {

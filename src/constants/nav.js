@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, ClipboardCheck, Wrench,
-  Tags, BarChart3, UserCog, ShieldCheck, Settings, Car, CreditCard, CarFront, Megaphone, Route as RouteIcon, Star,
+  Tags, BarChart3, UserCog, ShieldCheck, Settings, CreditCard, Megaphone, Route as RouteIcon,
 } from 'lucide-react'
 
 // Admin portal modules. `perm` gates visibility (Super Admin sees all);
@@ -12,13 +12,10 @@ export const NAV_ITEMS = [
   { to: '/rides', label: 'Rides', icon: RouteIcon, perm: 'rides.view', group: 'Operations' },
   { to: '/inspections', label: 'Inspections', icon: ClipboardCheck, perm: 'inspections.view', group: 'Operations' },
   { to: '/providers', label: 'Service Providers', icon: Wrench, perm: 'providers.view', group: 'Operations' },
-  { to: '/listings', label: 'Car Listings', icon: Car, perm: 'listings.view', group: 'Operations' },
-  { to: '/rentals', label: 'Rent a Car', icon: CarFront, perm: 'rentals.view', group: 'Operations' },
   { to: '/categories', label: 'Service Categories', icon: Tags, perm: 'categories.view', group: 'Operations' },
 
   { to: '/reports', label: 'Reports', icon: BarChart3, perm: 'reports.view', group: 'Insights' },
   { to: '/billing', label: 'Billing & Plans', icon: CreditCard, perm: 'billing.view', group: 'Insights' },
-  { to: '/featured', label: 'Featured', icon: Star, perm: 'billing.view', group: 'Insights' },
 
   { to: '/staff', label: 'Staff', icon: UserCog, perm: 'staff.view', group: 'Access' },
   { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck, perm: 'roles.view', group: 'Access' },

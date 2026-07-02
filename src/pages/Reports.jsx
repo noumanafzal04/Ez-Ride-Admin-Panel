@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import {
-  Users, Car, ClipboardCheck, Wrench, Loader2, Tag, TrendingUp, CalendarRange, CheckCircle2,
+  Users, Car, ClipboardCheck, Wrench, Loader2, TrendingUp, CalendarRange, CheckCircle2,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -19,7 +19,6 @@ const PRESETS = [
 const SERIES = [
   { key: 'users', name: 'New users', color: '#1d4ed8' },
   { key: 'bookings', name: 'Bookings', color: '#16a34a' },
-  { key: 'listings', name: 'Listings', color: '#ea580c' },
 ]
 
 const ChartTip = ({ active, payload, label }) => {
@@ -95,7 +94,6 @@ export default function Reports() {
         <StatCard tone="violet" label="New users" value={r.period.new_users} icon={Users} />
         <StatCard tone="teal" label="New rides posted" value={r.period.new_rides} icon={Car} />
         <StatCard tone="emerald" label="Bookings" value={r.period.new_bookings} icon={CheckCircle2} />
-        <StatCard tone="amber" label="New listings" value={r.period.new_listings} icon={Tag} />
       </StatCards>
 
       {/* Trend */}
@@ -160,11 +158,6 @@ export default function Reports() {
           <Row label="Approved" value={r.providers.approved} total={r.providers.total} color="bg-emerald-500" />
           <Row label="Pending" value={r.providers.pending} total={r.providers.total} color="bg-amber-500" />
           <Row label="Rejected" value={r.providers.rejected} total={r.providers.total} color="bg-red-500" />
-        </Card>
-        <Card title="Car listings">
-          <Row label="Active" value={r.listings?.active || 0} total={r.listings?.total || 0} color="bg-emerald-500" />
-          <Row label="In review" value={r.listings?.pending || 0} total={r.listings?.total || 0} color="bg-amber-500" />
-          <Row label="Sold" value={r.listings?.sold || 0} total={r.listings?.total || 0} color="bg-gray-400" />
         </Card>
       </div>
     </div>

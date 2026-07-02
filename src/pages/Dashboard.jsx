@@ -22,7 +22,6 @@ const DASH_PRESETS = [
 const TREND_SERIES = [
   { key: 'users', name: 'Users', color: '#1d4ed8' },
   { key: 'bookings', name: 'Bookings', color: '#16a34a' },
-  { key: 'listings', name: 'Listings', color: '#ea580c' },
 ]
 
 const greeting = () => {
@@ -31,7 +30,7 @@ const greeting = () => {
 }
 const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-const NOTIF_ICON = { driver_pending: UserCheck, inspection_new: ClipboardCheck, provider_new: Wrench, listing_managed_new: Car }
+const NOTIF_ICON = { driver_pending: UserCheck, inspection_new: ClipboardCheck, provider_new: Wrench }
 const timeAgo = (iso) => {
   if (!iso) return ''
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
@@ -177,7 +176,6 @@ export default function Dashboard() {
         <SoftStat tone="blue" label="New users" value={r.period.new_users} icon={Users} />
         <SoftStat tone="teal" label="New rides" value={r.period.new_rides} icon={Car} />
         <SoftStat tone="emerald" label="Bookings" value={r.period.new_bookings} icon={ClipboardCheck} />
-        <SoftStat tone="orange" label="New listings" value={r.period.new_listings} icon={Wrench} />
       </div>
 
       {/* Trend + verification donut */}

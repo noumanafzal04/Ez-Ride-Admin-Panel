@@ -9,11 +9,6 @@ const adminService = {
   updateRole: (id, payload) => api.put(`/admin/roles/${id}`, payload),
   deleteRole: (id) => api.delete(`/admin/roles/${id}`),
 
-  // Featured (paid boost)
-  featureOrders: (params) => api.get('/admin/feature-orders', { params }),
-  featureSettings: () => api.get('/admin/feature-settings'),
-  updateFeatureSetting: (module, payload) => api.put(`/admin/feature-settings/${module}`, payload),
-
   // App users + verification
   appUsers: (params) => api.get('/admin/app-users', { params }),
   appUserStats: () => api.get('/admin/app-users/stats'),
@@ -75,19 +70,6 @@ const adminService = {
   updateBillingSetting: (module, p) => api.put(`/admin/billing/settings/${module}`, p),
   billingSubscriptions: (params) => api.get('/admin/billing/subscriptions', { params }),
   grantSubscription: (p) => api.post('/admin/billing/subscriptions/grant', p),
-
-  // Rent a Car
-  rentals: (params) => api.get('/admin/rentals', { params }),
-  setRentalStatus: (id, status) => api.post(`/admin/rentals/${id}/status`, { status }),
-  setRentalPrice: (id, price) => api.post(`/admin/rentals/${id}/price`, { price }),
-  setRentalFeatured: (id, is_featured) => api.post(`/admin/rentals/${id}/featured`, { is_featured }),
-
-  // Marketplace car listings
-  listings: (params) => api.get('/admin/car-listings', { params }),
-  listing: (id) => api.get(`/admin/car-listings/${id}`),
-  setListingStatus: (id, status) => api.post(`/admin/car-listings/${id}/status`, { status }),
-  setListingPrice: (id, price) => api.post(`/admin/car-listings/${id}/price`, { price }),
-  setListingFeatured: (id, is_featured) => api.post(`/admin/car-listings/${id}/featured`, { is_featured }),
 }
 
 export default adminService

@@ -10,12 +10,9 @@ import Users from './pages/Users'
 import Rides from './pages/Rides'
 import Categories from './pages/Categories'
 import Providers from './pages/Providers'
-import Listings from './pages/Listings'
-import Rentals from './pages/Rentals'
 import Inspections from './pages/Inspections'
 import Reports from './pages/Reports'
 import Billing from './pages/Billing'
-import Featured from './pages/Featured'
 import Modules from './pages/Modules'
 import Announcements from './pages/Announcements'
 
@@ -31,12 +28,9 @@ export default function App() {
           <Route path="/rides" element={<Rides />} />
           <Route path="/inspections" element={<Inspections />} />
           <Route path="/providers" element={<Providers />} />
-          <Route path="/listings" element={<Listings />} />
-          <Route path="/rentals" element={<Rentals />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/billing" element={<Billing />} />
-          <Route path="/featured" element={<Featured />} />
           <Route path="/staff" element={<Staff />} />
           <Route path="/roles" element={<Roles />} />
           <Route path="/announcements" element={<Announcements />} />

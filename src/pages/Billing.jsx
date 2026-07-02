@@ -16,7 +16,6 @@ import { useAppUsers } from '../hooks/useUsers'
 
 const MODULES = [
   { key: 'ride', label: 'Ride' }, { key: 'service', label: 'Service Provider' },
-  { key: 'buysell', label: 'Buy / Sell' }, { key: 'rental', label: 'Rental' },
 ]
 const MODULE_LABEL = Object.fromEntries(MODULES.map((m) => [m.key, m.label]))
 const FREE_MODE_LABEL = { active_cap: 'Concurrent active items', category_cap: 'Categories', intro_credit: 'Lifetime free posts' }
